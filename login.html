@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTSIDE.LEARNING BY SIRAWIT - LOGIN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+
+        body {
+            background: #03112d url('homepage/background.svg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .login-card {
+            background: rgba(3, 17, 45, 0.85);
+            border: 2px solid #00d2ff;
+            box-shadow: 0 0 25px rgba(0, 210, 255, 0.3);
+            border-radius: 15px;
+            padding: 40px 30px;
+            backdrop-filter: blur(8px);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        .divider {
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d2ff, transparent);
+            margin: 0 auto 30px auto;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto 25px auto;
+        }
+
+        .input-sub-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #00d2ff;
+        }
+
+        input,
+        select {
+            width: 100%;
+            background: rgba(16, 37, 66, 0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 5px;
+            padding: 12px;
+            color: #fff;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+        }
+
+        select {
+            text-align-last: center;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='cyan' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        select option {
+            background: #0d1e36;
+            color: #fff;
+        }
+
+        .btn-cyber {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 12px 45px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;
+            transition: 0.3s;
+            margin-top: 15px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn-cyber:hover {
+            background: #00ffff;
+            color: #03112d;
+            box-shadow: 0 0 20px #00ffff;
+        }
+
+        .btn-dev {
+            display: block;
+            margin: 12px auto 0;
+            background: transparent;
+            border: 1px dashed rgba(255, 200, 0, 0.45);
+            color: rgba(255, 200, 0, 0.55);
+            padding: 6px 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            letter-spacing: 0.08em;
+            transition: 0.25s;
+        }
+
+        .btn-dev:hover {
+            border-color: #ffc800;
+            color: #ffc800;
+            background: rgba(255, 200, 0, 0.08);
+            box-shadow: 0 0 10px rgba(255, 200, 0, 0.2);
+        }
+
+        .dev-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .btn-dev-student {
+            border-color: rgba(100, 220, 150, 0.45);
+            color: rgba(100, 220, 150, 0.55);
+        }
+
+        .btn-dev-student:hover {
+            border-color: #64dc96;
+            color: #64dc96;
+            background: rgba(100, 220, 150, 0.08);
+            box-shadow: 0 0 10px rgba(100, 220, 150, 0.2);
+        }
+    </style>
+    <!-- 1. ดึง Library Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // 2. ใส่ URL และ Key ที่ก๊อปมาจาก Supabase
+        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
+
+        // 3. สร้าง ตัวเชื่อมต่อสำหรับใช้งาน
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="login-card">
+            <h1>OUTSIDE.LEARNING BY SIRAWIT</h1>
+            <div class="divider"></div>
+            <div class="input-group">
+                <label>ชื่อ - สกุล</label>
+                <input type="text" id="studentName" placeholder="กรอกชื่อและนามสกุล">
+            </div>
+            <div class="input-row">
+                <div class="input-sub-group">
+                    <label>ชั้น</label>
+                    <select id="studentClass">
+                        <option value="ม.1/1">ม.1/1</option>
+                        <option value="ม.1/2">ม.1/2</option>
+                        <option value="ม.1/3">ม.1/3</option>
+                        <option value="ม.1/4">ม.1/4</option>
+                        <option value="ม.1/5">ม.1/5</option>
+                        <option value="ม.1/6">ม.1/6</option>
+                        <!-- เพิ่ม option - สำหรับบัญชีครูผู้สอน/ผู้ดูแล -->
+                        <option value="-">-</option>
+                    </select>
+                </div>
+                <div class="input-sub-group">
+                    <label>เลขที่</label>
+                    <!-- เปลี่ยน type เป็น text เพื่อรองรับการกรอกเลขที่ 00 สำหรับ Admin -->
+                    <input type="text" id="studentNumber" placeholder="1">
+                </div>
+            </div>
+            <button class="btn-cyber" onclick="loginAndGo()">เข้าสู่ระบบ</button>
+            <div class="dev-row">
+                <button class="btn-dev" onclick="devLogin()" title="Dev bypass — ข้าม Supabase">⚡ DEV: Admin</button>
+                <button class="btn-dev btn-dev-student" onclick="devLoginStudent()"
+                    title="Dev bypass — เข้าเป็นนักเรียน">📚 DEV: นักเรียน</button>
+                <button class="btn-dev" style="border-color:rgba(100,180,255,0.45);color:rgba(100,180,255,0.6)"
+                    onclick="testConnection()" title="ทดสอบการเชื่อมต่อ Supabase">🔌 TEST DB</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== TEST CONNECTION ======
+        async function testConnection() {
+            alert('🔌 กำลังเชื่อมต่อ Supabase...');
+            const { data, error } = await _supabase
+                .from('students')
+                .select('id, name, class, no, role')
+                .limit(10);
+
+            if (error) {
+                alert(
+                    '❌ เชื่อมต่อไม่ได้ / RLS บล็อก\n\n' +
+                    'code: ' + error.code + '\n' +
+                    'message: ' + error.message + '\n\n' +
+                    '→ ไปแก้ RLS ใน Supabase แล้วลองใหม่'
+                );
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                alert('⚠️ เชื่อมต่อได้ แต่ตาราง students ว่างเปล่า\nตรวจสอบว่า insert ข้อมูลแล้วหรือยังไม่');
+                return;
+            }
+
+            alert(
+                '✅ เชื่อมต่อได้! พบ ' + data.length + ' แถว\n\n' +
+                data.map(function (u) {
+                    return '• "' + u.name + '" | ' + u.class + ' | no:' + u.no + ' | ' + u.role;
+                }).join('\n')
+            );
+        }
+        // ============================
+
+        window.onload = function () {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                const role = sessionStorage.getItem('userRole');
+                if (role === 'admin' || role === 'substitute') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'home.html';
+                }
+            }
+        }
+
+        // ====== DEV BYPASS (ลบออกก่อน deploy จริง) ======
+        function devLogin() {
+            if (!confirm('⚡ DEV MODE\nเข้า Admin โดยข้าม Supabase\n(ลบปุ่มนี้ก่อน deploy จริง)')) return;
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('studentName', 'Dev Admin');
+            sessionStorage.setItem('studentClass', '-');
+            sessionStorage.setItem('studentNumber', '00');
+            sessionStorage.setItem('userRole', 'admin');
+            window.location.href = 'admin.html';
+        }
+        function devLoginStudent() {
+            if (!confirm('📚 DEV MODE\nเข้าเป็นนักเรียนโดยข้าม Supabase\n(ลบปุ่มนี้ก่อน deploy จริง)')) return;
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('studentName', 'Dev นักเรียน');
+            sessionStorage.setItem('studentClass', 'ม.1/1');
+            sessionStorage.setItem('studentNumber', '1');
+            sessionStorage.setItem('userRole', 'student');
+            window.location.href = 'home.html';
+        }
+        // =====================================================
+
+        async function loginAndGo() {
+            const name = document.getElementById('studentName').value.trim().normalize('NFC');
+            const sClass = document.getElementById('studentClass').value;
+            const sNo = document.getElementById('studentNumber').value.trim();
+
+            if (!name || !sNo) {
+                alert('กรุณากรอกชื่อ-นามสกุล และเลขที่ให้ครบถ้วนครับ');
+                return;
+            }
+
+            // ══ DEBUG STEP 1: แสดงค่าที่กรอก ══
+            console.log('─── LOGIN DEBUG ───');
+            console.log('📝 ชื่อ (NFC):', JSON.stringify(name));
+            console.log('📚 ชั้น:', JSON.stringify(sClass));
+            console.log('🔢 เลขที่:', JSON.stringify(sNo));
+
+            // ══ DEBUG STEP 2: ดึงข้อมูลจาก Supabase ══
+            console.log('🌐 กำลังดึงข้อมูลจาก Supabase...');
+            const { data: candidates, error } = await _supabase
+                .from('students')
+                .select('*')
+                .eq('class', sClass)
+                .eq('no', sNo);
+
+            // ══ DEBUG STEP 3: แสดงผล Supabase ══
+            if (error) {
+                console.error('❌ Supabase Error:', error);
+                alert('❌ Supabase Error:\n' + JSON.stringify(error, null, 2));
+                return;
+            }
+
+            console.log('📦 candidates ที่ได้จาก Supabase:', candidates);
+            alert(
+                '🔍 DEBUG — ผลจาก Supabase\n\n' +
+                '🔹 ชั้น + เลขที่ที่ค้น: ' + sClass + ' / ' + sNo + '\n' +
+                '🔹 พบ ' + (candidates ? candidates.length : 0) + ' แถว\n\n' +
+                (candidates && candidates.length > 0
+                    ? candidates.map((u, i) =>
+                        '[' + i + '] name: "' + u.name + '"\n' +
+                        '     class: "' + u.class + '" | no: "' + u.no + '" | role: "' + u.role + '"'
+                    ).join('\n\n')
+                    : '⚠️ ไม่พบแถวใดเลย (candidates ว่าง)\nตรวจสอบว่า class/no ใน DB ตรงหรือเปล่า')
+            );
+
+            if (!candidates || candidates.length === 0) return;
+
+            // ══ DEBUG STEP 4: เทียบชื่อ ══
+            const nameMatches = candidates.map(u => ({
+                db_name_raw: u.name,
+                db_name_nfc: u.name.trim().normalize('NFC'),
+                input_name: name,
+                match: u.name.trim().normalize('NFC') === name
+            }));
+            console.log('🔤 Name comparison:', nameMatches);
+            alert(
+                '🔤 DEBUG — เทียบชื่อ\n\n' +
+                nameMatches.map(m =>
+                    'DB (raw):  "' + m.db_name_raw + '"\n' +
+                    'DB (NFC):  "' + m.db_name_nfc + '"\n' +
+                    'Input:     "' + m.input_name + '"\n' +
+                    'ตรงกัน: ' + (m.match ? '✅ YES' : '❌ NO')
+                ).join('\n\n─────\n\n')
+            );
+
+            const user = candidates.find(u => u.name.trim().normalize('NFC') === name);
+            if (!user) {
+                alert('❌ ชื่อไม่ตรงกัน\nลองคัดลอกชื่อจาก Debug ด้านบน แล้วกรอกใหม่อีกครั้งครับ');
+                return;
+            }
+
+            // ✅ บันทึก Session การใช้งาน
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('studentName', user.name);
+            sessionStorage.setItem('studentClass', user.class);
+            sessionStorage.setItem('studentNumber', user.no);
+            sessionStorage.setItem('userRole', user.role);
+
+            // 🔑 ส่งไปยังหน้าที่ถูกต้องตาม role จาก DB
+            if (user.role === 'admin' || user.role === 'substitute') {
+                const roleLabel = user.role === 'admin' ? 'ครูประจำวิชา' : 'ครูสอนแทน';
+                alert('✅ ยินดีต้อนรับครู ' + user.name + ' (' + roleLabel + ')');
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'home.html';
+            }
+        }
+    </script>
+</body>
+
+</html>

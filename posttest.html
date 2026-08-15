@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบทดสอบหลังเรียน - OUTSIDE.LEARNING</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- ดึง Supabase CDN เตรียมพร้อมบันทึกคะแนน -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+
+        body {
+            background: #03112d url('homepage/background.svg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: #ffffff;
+            padding: 40px 20px;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(10, 34, 64, 0.3) 0%, rgba(3, 17, 45, 0.9) 100%);
+            z-index: 1;
+            position: fixed;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .quiz-header-card {
+            background: rgba(3, 17, 45, 0.85);
+            border: 2px solid #00d2ff;
+            box-shadow: 0 0 25px rgba(0, 210, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(8px);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #00d2ff;
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        .sub-title {
+            color: #88a4e6;
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+
+        .shuffle-badge {
+            display: inline-block;
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            font-size: 0.85rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 12px;
+        }
+
+        .question-card {
+            background: rgba(3, 17, 45, 0.85);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.3s;
+        }
+
+        .question-card:hover {
+            border-color: #00ffff;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .options-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            background: rgba(16, 37, 66, 0.6);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 8px;
+            padding: 14px 20px;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-label:hover {
+            background: rgba(0, 255, 255, 0.05);
+            border-color: #00ffff;
+        }
+
+        .option-label input[type="radio"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #00d2ff;
+            border-radius: 50%;
+            margin-right: 15px;
+            outline: none;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option-label input[type="radio"]:checked {
+            border-color: #00ffff;
+            background: #00ffff;
+            box-shadow: 0 0 8px #00ffff;
+        }
+
+        .option-label.active {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: #00ffff;
+            font-weight: 600;
+        }
+
+        .footer-action {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            margin-bottom: 50px;
+        }
+
+        .btn-submit {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 15px 60px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            text-transform: uppercase;
+            transition: 0.3s;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn-submit:hover {
+            background: #00ffff;
+            color: #03112d;
+            box-shadow: 0 0 25px #00ffff;
+        }
+
+        .result-card {
+            background: rgba(3, 17, 45, 0.9);
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+            border-radius: 15px;
+            padding: 50px 30px;
+            backdrop-filter: blur(8px);
+            text-align: center;
+            display: none;
+        }
+
+        .score-text {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: #00ffcc;
+            text-shadow: 0 0 25px rgba(0, 255, 204, 0.6);
+            margin: 20px 0 10px 0;
+        }
+
+        .time-text {
+            font-size: 1.1rem;
+            color: #38bdf8;
+            margin-bottom: 25px;
+        }
+
+        .btn-back {
+            background: transparent;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            background: #00ffff;
+            color: #03112d;
+            box-shadow: 0 0 15px #00ffff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- 1. ส่วนหน้าแบบทดสอบหลังเรียน -->
+        <div id="quiz-area">
+            <div class="quiz-header-card">
+                <h2>แบบทดสอบหลังเรียน</h2>
+                <p class="sub-title">เรื่อง วัสดุ เครื่องมือช่าง กลไกไฟฟ้าและอิเล็กทรอนิกส์</p>
+            </div>
+
+            <form id="quizForm">
+                <div id="questions-container"></div>
+
+                <div class="footer-action">
+                    <button type="submit" class="btn-submit">ส่งคำตอบแบบทดสอบ</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 2. ส่วนหน้าแสดงผลลัพธ์คะแนน -->
+        <div id="result-area" class="result-card">
+            <h2>ส่งแบบทดสอบหลังเรียนสำเร็จ!</h2>
+            <div
+                style="width: 80%; height: 2px; background: linear-gradient(90deg, transparent, #00ffcc, transparent); margin: 20px auto;">
+            </div>
+            <p style="font-size: 1.3rem; color: #88a4e6;">คะแนนที่คุณทำได้</p>
+            <div class="score-text" id="final-score">0 / 10</div>
+            <div class="time-text" id="time-spent">เวลาที่ใช้: 00 นาที 00 วินาที</div>
+            <p style="font-size: 1.1rem; margin-bottom: 35px; color: #cbd5e1;">
+                ระบบได้บันทึกผลการประเมินหลังเรียนลงในระบบเรียบร้อยแล้วครับ</p>
+            <button class="btn-back" onclick="window.location.href='home.html'">กลับสู่หน้าหลัก</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. ตั้งค่าเชื่อมต่อ Supabase (ใส่ Key ของครู)
+        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
+        let _supabase = null;
+        if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'ใส่_PROJECT_URL_ตรงนี้') {
+            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+
+        // คลังข้อสอบต้นฉบับ 10 ข้อ
+        const rawQuizData = [
+            {
+                question: "ข้อใดต่อไปนี้จัดเป็นเครื่องมือประเภทวัดขนาดในงานช่าง",
+                options: ["ค้อน", "ตลับเมตร", "ประแจวงแหวน", "สว่านกระแทก"],
+                correct: 1 // ตลับเมตร
+            },
+            {
+                question: "หากต้องการขันน็อตที่มีหัวเป็นรูปหกเหลี่ยม ควรเลือกใช้เครื่องมือใดจึงจะเหมาะสมที่สุด",
+                options: ["ไขควงปากแบน", "คีมปากจระเข้", "ประแจปากตาย", "ค้อนหงอน"],
+                correct: 2 // ประแจปากตาย
+            },
+            {
+                question: "ตัวต้านทาน (Resistor) ทำหน้าที่อะไรในวงจรไฟฟ้า",
+                options: ["ผลิตกระแสไฟฟ้า", "เก็บสะสมประจุไฟฟ้า", "จำกัดและต้านทานการไหลของกระแสไฟฟ้า", "เป็นสวิตช์เปิด-ปิดไฟ"],
+                correct: 2 // จำกัดและต้านทาน
+            },
+            {
+                question: "สัญลักษณ์ขั้วบวก (+) ของหลอด LED มักสังเกตได้จากส่วนใดของตัวหลอดจริง",
+                options: ["ขาที่ยาวกว่า", "ขาที่สั้นกว่า", "รอยบากที่ขอบหลอด", "ตัวหลอดที่มีสีเข้มกว่า"],
+                correct: 0 // ขาที่ยาวกว่า
+            },
+            {
+                question: "เครื่องมือชนิดใดใช้สำหรับเจาะรูบนไม้ เหล็ก หรือกำแพงคอนกรีต",
+                options: ["คีมปากแหลม", "ตะไบ", "สว่าน", "เลื่อยวงเดือน"],
+                correct: 2 // สว่าน
+            },
+            {
+                question: "แหล่งจ่ายไฟฟ้ากระแสตรง (DC) ในชีวิตประจำวันคือข้อใด",
+                options: ["เต้ารับไฟบ้าน", "ไดนาโมโรงไฟฟ้า", "ถ่านไฟฉาย / แบตเตอรี่", "แผงสวิตช์ไฟ"],
+                correct: 2 // ถ่านไฟฉาย / แบตเตอรี่
+            },
+            {
+                question: "สวิตช์ (Switch) ทำหน้าที่อะไรในวงจรไฟฟ้าพื้นฐาน",
+                options: ["เพิ่มแรงดันไฟฟ้าให้สูงขึ้น", "ตัดหรือต่อวงจรไฟฟ้าเพื่อควบคุมการทำงาน", "ป้องกันไม่ให้ไฟดูด", "แปลงไฟฟ้ากระแสสลับเป็นกระแสตรง"],
+                correct: 1 // ตัดหรือต่อวงจร
+            },
+            {
+                question: "หากกระแสไฟฟ้าไหลผ่านหลอด LED มากเกินไปโดยไม่มีตัวต้านทานดักไว้ จะเกิดอะไรขึ้น",
+                options: ["หลอดไฟจะสว่างน้อยลง", "หลอดไฟจะไม่ติดเลย", "หลอดไฟอาจจะขาดหรือเสียหายได้", "ประหยัดพลังงานมากขึ้น"],
+                correct: 2 // ขาดหรือเสียหาย
+            },
+            {
+                question: "ข้อใดกล่าวถูกต้องเกี่ยวกับความปลอดภัยในการปฏิบัติงานช่าง",
+                options: ["สวมถุงเท้าอย่างเดียวก็พอไม่ต้องใส่รองเท้า", "ตรวจเช็กสภาพเครื่องมือและสายไฟทุกครั้งก่อนใช้งาน", "ซ่อมอุปกรณ์ไฟฟ้าขณะที่มือเปียกน้ำเพื่อระบายความร้อน", "ใช้เครื่องมือผิดประเภทถ้าไม่มีเครื่องมือตรงรุ่น"],
+                correct: 1 // ตรวจเช็กสภาพ
+            },
+            {
+                question: "มอเตอร์กระแสตรง (DC Motor) ทำหน้าที่แปลงพลังงานไฟฟ้าเป็นพลังงานประเภทใด",
+                options: ["พลังงานความร้อน", "พลังงานกล (การหมุน)", "พลังงานเคมี", "พลังงานเสียง"],
+                correct: 1 // พลังงานกล
+            }
+        ];
+
+        // ฟังก์ชันสุ่มสลับอาร์เรย์ (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // ตัวแปรสำหรับเก็บชุดคำถามที่สลับแล้ว
+        let shuffledQuiz = [];
+        const startTime = Date.now(); // บันทึกเวลาเริ่มต้นทำข้อสอบ
+
+        // ฟังก์ชันเตรียมข้อสอบ (สลับข้อ + สลับช้อยส์)
+        function prepareQuiz() {
+            // 1. สลับลำดับคำถาม
+            const questionsShuffled = shuffleArray(rawQuizData);
+
+            // 2. สลับลำดับช้อยส์ในแต่ละข้อ พร้อมอัปเดต index ของข้อที่ถูกต้อง
+            shuffledQuiz = questionsShuffled.map(q => {
+                const correctAnswerText = q.options[q.correct];
+                const optionsShuffled = shuffleArray(q.options);
+                const newCorrectIndex = optionsShuffled.indexOf(correctAnswerText);
+
+                return {
+                    question: q.question,
+                    options: optionsShuffled,
+                    correct: newCorrectIndex
+                };
+            });
+
+            // 3. แสดงผลลงหน้าเว็บ
+            renderQuiz();
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+
+            shuffledQuiz.forEach((q, qIdx) => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+
+                let optionsHtml = '';
+                q.options.forEach((opt, oIdx) => {
+                    optionsHtml += `
+                        <label class="option-label" id="label-q${qIdx}-o${oIdx}">
+                            <input type="radio" name="question${qIdx}" value="${oIdx}" onclick="highlightSelection(${qIdx}, ${oIdx})" required>
+                            ${opt}
+                        </label>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="question-text">${qIdx + 1}. ${q.question}</div>
+                    <div class="options-group">
+                        ${optionsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function highlightSelection(qIdx, selectedOptIdx) {
+            for (let i = 0; i < 4; i++) {
+                const label = document.getElementById(`label-q${qIdx}-o${i}`);
+                if (label) label.classList.remove('active');
+            }
+            const activeLabel = document.getElementById(`label-q${qIdx}-o${selectedOptIdx}`);
+            if (activeLabel) activeLabel.classList.add('active');
+        }
+
+        // ตรวจและส่งข้อสอบ
+        document.getElementById('quizForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const endTime = Date.now();
+            const totalSeconds = Math.floor((endTime - startTime) / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')} นาที ${seconds.toString().padStart(2, '0')} วินาที`;
+
+            let score = 0;
+            shuffledQuiz.forEach((q, qIdx) => {
+                const checkedOption = document.querySelector(`input[name="question${qIdx}"]:checked`);
+                if (checkedOption && parseInt(checkedOption.value) === q.correct) {
+                    score++;
+                }
+            });
+
+            // แสดงหน้าผลลัพธ์
+            document.getElementById('quiz-area').style.display = 'none';
+            document.getElementById('result-area').style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${shuffledQuiz.length}`;
+            document.getElementById('time-spent').innerText = `เวลาที่ใช้: ${timeString}`;
+
+            sessionStorage.setItem('posttestScore', score);
+            sessionStorage.setItem('posttestTime', timeString);
+            // ✅ Mark posttestDone เมื่อส่งแบบทดสอบหลังเรียน
+            sessionStorage.setItem('posttestDone', 'true');
+
+            // ยิงคะแนนเข้า Supabase ลงตาราง activity_logs
+            savePosttestScore(score, timeString);
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        async function savePosttestScore(score, timeSpent) {
+            if (!_supabase) return;
+
+            const studentName = sessionStorage.getItem('studentName') || 'ผู้ทดสอบ';
+            const studentClass = sessionStorage.getItem('studentClass') || '-';
+            const studentNo = sessionStorage.getItem('studentNumber') || '0';
+
+            try {
+                const { error } = await _supabase
+                    .from('activity_logs')
+                    .insert([{
+                        name: studentName,
+                        class: studentClass,
+                        student_no: `เลขที่ ${studentNo}`,
+                        activity: 'posttest',
+                        score: `${score} / ${shuffledQuiz.length}`,
+                        time_spent: timeSpent,
+                        hearts: '-'
+                    }]);
+                if (error) { console.error('Error saving posttest score:', error); }
+                else { console.log('Post-test score saved!'); }
+            } catch (err) { console.error('DB error:', err); }
+        }
+
+        // เริ่มต้นสุ่มคำถามทันทีที่เปิดหน้าเว็บ
+        window.onload = async function () {
+            // ตรวจสอบ login ก่อน
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                alert('⚠️ กรุณา Login ก่อนนะครับ');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 🔒 ตรวจสอบลำดับครบผ่าน Supabase (pretest) + sessionStorage (อื่นๆ)
+            if (sessionStorage.getItem('pretestDone') !== 'true') {
+                var name = sessionStorage.getItem('studentName');
+                var cls = sessionStorage.getItem('studentClass');
+                var no = sessionStorage.getItem('studentNumber');
+
+                if (!name) {
+                    alert('⚠️ กรุณา Login ก่อนนะครับ');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                var res = await _supabase.from('students')
+                    .select('pretest_done')
+                    .eq('name', name).eq('class', cls).eq('no', no)
+                    .single();
+
+                if (res.data && res.data.pretest_done === true) {
+                    sessionStorage.setItem('pretestDone', 'true');
+                } else {
+                    alert('⚠️ กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อนนะครับ');
+                    window.location.href = 'home.html';
+                    return;
+                }
+            }
+
+            if (sessionStorage.getItem('quiz10sDone') !== 'true') {
+                alert('⚠️ กรุณาทำกิจกรรม 1 คำถาม 10 วินาที ให้เสร็จก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+
+            if (sessionStorage.getItem('sandboxDone') !== 'true') {
+                alert('⚠️ กรุณาเข้าใช้ Circuit Simulation ก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+
+            if (sessionStorage.getItem('mahjongDone') !== 'true') {
+                alert('⚠️ กรุณาเล่นเกม Mahjong ให้เสร็จก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+
+            prepareQuiz();
+        };
+    </script>
+</body>
+
+</html>

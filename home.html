@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTSIDE.LEARNING - DASHBOARD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+
+        body {
+            background: #03112d url('homepage/background.svg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .dashboard-card {
+            background: #ffffff;
+            color: #333333;
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: left;
+        }
+
+        .dashboard-header {
+            color: #03112d;
+            font-size: 1.8rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-welcome {
+            font-size: 1rem;
+            color: #475569;
+            font-weight: 400;
+        }
+
+        .progression-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+
+        .progress-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 15px;
+            background: #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #0056b3);
+            border-radius: 10px;
+        }
+
+        .chapter-box {
+            border-left: 5px solid #00d2ff;
+            padding-left: 15px;
+            margin-bottom: 30px;
+        }
+
+        .chapter-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 15px;
+        }
+
+        .btn-go {
+            background: #03112d;
+            color: #ffffff;
+            border: none;
+            padding: 10px 35px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-go:hover {
+            background: #00d2ff;
+            color: #03112d;
+        }
+
+        .btn-go.locked {
+            background: #94a3b8 !important;
+            color: #e2e8f0 !important;
+            border: 1px dashed #64748b !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+            opacity: 0.65;
+            pointer-events: none;
+        }
+
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            transition: 0.3s;
+        }
+
+        .step-item.done {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+
+        .step-item.active {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+        }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            background: #cbd5e1;
+            color: #475569;
+        }
+
+        .step-item.done .step-num {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .step-item.active .step-num {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .step-label {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .step-item.done .step-label {
+            color: #15803d;
+        }
+
+        .step-status {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .step-item.done .step-status {
+            color: #22c55e;
+            font-weight: 700;
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            color: #ffffff;
+            border: none;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="dashboard-card">
+            <h2 class="dashboard-header">
+                <span>OUTSIDE.LEARNING BY SIRAWIT</span>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="user-welcome" id="welcomeText">ผู้เรียน: กำลังโหลด...</span>
+                    <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+                </div>
+            </h2>
+
+            <div class="progression-section">
+                <div class="progress-title">
+                    <span id="progressLabel">ความคืบหน้า 0/5</span>
+                    <span id="progressPct">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+            </div>
+
+            <div class="chapter-box">
+                <h3 class="chapter-title">เรื่อง วัสดุ เครื่องมือช่าง กลไกไฟฟ้าและอิเล็กทรอนิกส์</h3>
+                <div class="step-list" id="activityList">
+                    <!-- สร้างโดย JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // กำหนดข้อมูลกิจกรรมตามลำดับ
+        const ACTIVITIES = [
+            {
+                id: 'pretest',
+                label: '📝 แบบทดสอบก่อนเรียน',
+                href: 'quiz before lesson.html',
+                color: '#ff3366',
+                doneKey: 'pretestDone',
+                requires: []
+            },
+            {
+                id: 'quiz10s',
+                label: '⚡ 1 คำถาม 10 วินาที',
+                href: '10-sec question.html',
+                color: '#22c55e',
+                doneKey: 'quiz10sDone',
+                requires: ['pretestDone']
+            },
+            {
+                id: 'sandbox',
+                label: '🔌 Circuit Simulation',
+                href: 'sandbox.html',
+                color: '#0284c7',
+                doneKey: 'sandboxDone',
+                requires: ['pretestDone', 'quiz10sDone']
+            },
+            {
+                id: 'mahjong',
+                label: '🀄 Mahjong วัสดุ เครื่องมือช่าง กลไกไฟฟ้าและอิเล็กทรอนิกส์',
+                href: 'mahjong_game.html',
+                color: '#3b82f6',
+                doneKey: 'mahjongDone',
+                requires: ['pretestDone', 'quiz10sDone', 'sandboxDone']
+            },
+            {
+                id: 'posttest',
+                label: '🏆 แบบทดสอบหลังเรียน',
+                href: 'posttest.html',
+                color: '#ff9900',
+                doneKey: 'posttestDone',
+                requires: ['pretestDone', 'quiz10sDone', 'sandboxDone', 'mahjongDone']
+            }
+        ];
+
+        function renderActivities() {
+            const list = document.getElementById('activityList');
+            list.innerHTML = '';
+            let doneCount = 0;
+
+            ACTIVITIES.forEach((act, idx) => {
+                const isDone = sessionStorage.getItem(act.doneKey) === 'true';
+                const isUnlocked = act.requires.every(k => sessionStorage.getItem(k) === 'true');
+                const isActive = !isDone && isUnlocked;
+                if (isDone) doneCount++;
+
+                const item = document.createElement('div');
+                item.className = 'step-item' + (isDone ? ' done' : (isActive ? ' active' : ''));
+
+                const numEl = document.createElement('div');
+                numEl.className = 'step-num';
+                numEl.textContent = isDone ? '✓' : (idx + 1);
+
+                const labelEl = document.createElement('div');
+                labelEl.className = 'step-label';
+                labelEl.textContent = act.label;
+
+                const rightEl = document.createElement('div');
+                rightEl.className = 'step-status';
+
+                if (isDone) {
+                    rightEl.textContent = 'เสร็จแล้ว ✅';
+                } else if (isUnlocked) {
+                    const btn = document.createElement('a');
+                    btn.href = act.href;
+                    btn.className = 'btn-go';
+                    btn.style.background = act.color;
+                    btn.style.padding = '8px 20px';
+                    btn.style.fontSize = '0.95rem';
+                    btn.textContent = 'เริ่มเลย »';
+                    rightEl.appendChild(btn);
+                } else {
+                    rightEl.textContent = '🔒 ยังล็อคอยู่';
+                }
+
+                item.appendChild(numEl);
+                item.appendChild(labelEl);
+                item.appendChild(rightEl);
+                list.appendChild(item);
+            });
+
+            // อัพเดท progress bar
+            const pct = Math.round((doneCount / ACTIVITIES.length) * 100);
+            document.getElementById('progressLabel').textContent = `ความคืบหน้า ${doneCount}/${ACTIVITIES.length}`;
+            document.getElementById('progressPct').textContent = pct + '%';
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+
+        // ป้องกันด่านการลักไก่แอบเปิดหน้านี้โดยยังไม่ได้ Login
+        window.onload = function () {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = 'login.html';
+            } else {
+                const name = sessionStorage.getItem('studentName');
+                const sClass = sessionStorage.getItem('studentClass');
+                const sNo = sessionStorage.getItem('studentNumber');
+                document.getElementById('welcomeText').innerText = `ผู้เรียน ${name} ${sClass} เลขที่ ${sNo}`;
+                renderActivities();
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-Tinkercad Sandbox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Chakra Petch', sans-serif; }
+        body {
+            background-color: #ffffff;
+            color: #333333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: rgba(3, 17, 45, 0.9);
+            border-bottom: 2px solid #00d2ff;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            z-index: 100;
+        }
+        header h1 { font-size: 1.5rem; color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+        
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        
+        .btn-sim {
+            background: #22c55e;
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+        }
+        .btn-sim.simulating {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+        .btn-sim:hover { transform: scale(1.05); }
+
+        .btn-back {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 7px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+        .btn-back:hover { background: rgba(0, 255, 255, 0.2); }
+
+        .action-toolbar {
+            background: rgba(3, 17, 45, 0.95);
+            border-bottom: 2px solid #00d2ff;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .tbtn {
+            background: #102542;
+            border: 1px solid #00d2ff;
+            color: #e0f7ff;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .tbtn:hover:not(:disabled) { background: #1a3a5c; border-color: #00ffff; }
+        .tbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .tbtn-danger { border-color: #ef4444; color: #fca5a5; }
+        .tbtn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.15); }
+        .tbtn-divider { width: 1px; height: 22px; background: rgba(0, 210, 255, 0.3); }
+
+        .workspace {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        .sandbox-board {
+            flex: 1;
+            background-color: #ffffff;
+            background-image: radial-gradient(circle, #cbd5e1 8%, transparent 8%),
+                              radial-gradient(circle, #cbd5e1 8%, transparent 8%);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .property-inspector {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(3, 17, 45, 0.95);
+            border: 2px solid #00d2ff;
+            border-radius: 8px;
+            padding: 15px;
+            color: white;
+            z-index: 200; 
+            width: 220px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: none;
+        }
+        .property-inspector h4 { font-size: 1rem; color: #00d2ff; margin-bottom: 10px; border-bottom: 1px solid rgba(0,210,255,0.3); padding-bottom: 5px; }
+        .property-row { margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .property-row label { font-size: 0.85rem; color: #cbd5e1; }
+        .property-row select { background: #102542; border: 1px solid #00d2ff; color: white; padding: 5px; border-radius: 4px; font-size: 0.9rem; }
+
+        .toolbox {
+            width: 280px;
+            background: rgba(3, 17, 45, 0.95);
+            border-left: 2px solid #00d2ff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+            z-index: 150;
+        }
+        .toolbox-title {
+            font-size: 1.1rem;
+            color: #00d2ff;
+            border-bottom: 1px solid rgba(0, 210, 255, 0.3);
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+        }
+
+        .tool-card {
+            background: rgba(16, 37, 66, 0.8);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+        .tool-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .tool-icon {
+            width: 45px;
+            height: 45px;
+            background: #0d1e36;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+        }
+        .tool-icon svg { width: 35px; height: 35px; }
+        .tool-info h3 { font-size: 0.95rem; color: #fff; }
+        .tool-info p { font-size: 0.75rem; color: #88a4e6; }
+
+        /* 🛠️ FIX: ดันอุปกรณ์ (รวมถึงขั้วต่อข้างใน) ให้ลอยเหนือชั้นสายไฟเสมอ (z-index: 60 > 50)
+           เดิมตั้งไว้ที่ 10 (ต่ำกว่าสายไฟ) ทำให้พอวาดสายไฟเส้นแรกเสร็จ เส้นจะไปบังขั้วต่ออื่น
+           คลิกขั้วต่อเพื่อลากสายไฟเส้นถัดไปไม่ติด นี่คือสาเหตุหลักของบั๊ก "สายไฟต่อไม่ได้" */
+        .dropped-component {
+            position: absolute;
+            cursor: move;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
+            background: transparent;
+            border: 2px solid transparent;
+            touch-action: none;
+            user-select: none;
+            z-index: 60; 
+        }
+        .dropped-component.selected-active {
+            border: 2px dashed #ffaa00;
+            border-radius: 6px;
+        }
+        
+        .dropped-component.comp-battery { width: auto; }
+        .dropped-component:not(.comp-battery) { width: 100px; }
+        .dropped-component svg { height: 75px; pointer-events: none; }
+        .comp-label { font-size: 0.75rem; color: #334155; margin-top: 2px; font-weight: 600; text-align: center; }
+
+        /* 🛠️ ห่อไอคอน+ขั้วต่อไว้ในกลุ่มเดียว เพื่อหมุน/พลิกเฉพาะส่วนนี้ โดยไม่ทำให้ตัวหนังสือ (ชื่ออุปกรณ์/ป้ายกระแส) กลับหัวตามไปด้วย */
+        .comp-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        .terminals {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 4px;
+            padding: 0 8px;
+        }
+        .terminal {
+            position: relative; /* 🛠️ FIX: ต้องมี position ก่อน z-index ถึงจะมีผลจริง */
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            transition: 0.2s;
+            z-index: 60;
+            touch-action: none;
+        }
+        .terminal:hover { transform: scale(1.4); }
+        .terminal.pos { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
+        .terminal.neg { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+
+        /* ชั้นของสายไฟ (z-index: 50) อยู่ต่ำกว่าอุปกรณ์ (60) แต่สูงกว่าพื้นกระดาน เพื่อให้ขั้วต่อคลิกได้เสมอ */
+        .wires-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50; 
+            pointer-events: none; 
+        }
+        /* ล็อกสไตล์เส้นสายไฟให้ดักจับเมาส์แบบแม่นยำสูง */
+        .wires-overlay g {
+            cursor: pointer;
+            pointer-events: all;
+        }
+        .wires-overlay polyline.real-wire {
+            transition: stroke 0.2s, stroke-width 0.2s;
+        }
+        /* เส้นประสีส้มตอนกดเลือกค้างไว้ */
+        .wires-overlay polyline.real-wire.wire-selected {
+            stroke: #ffaa00 !important;
+            stroke-width: 6px !important;
+            stroke-dasharray: 4;
+        }
+        .wire-handle {
+            cursor: grab;
+            transition: r 0.15s;
+            touch-action: none;
+        }
+        .snap-guide {
+            stroke: #38bdf8;
+            stroke-width: 1.5;
+            stroke-dasharray: 6 4;
+            pointer-events: none;
+        }
+        .wire-handle:hover {
+            r: 11;
+        }
+
+        /* 🛠️ FIX: คลาสเหล่านี้ถูกเรียกใช้จาก JS อยู่แล้ว แต่ไม่เคยถูกนิยามใน CSS มาก่อน
+           ทำให้หลอด LED ไม่เรืองแสงเพิ่ม และมอเตอร์ไม่หมุน แม้วงจรจะครบสมบูรณ์ */
+        @keyframes led-flicker {
+            0%, 100% { filter: drop-shadow(0 0 6px #ef4444) drop-shadow(0 0 2px #fca5a5); }
+            50%      { filter: drop-shadow(0 0 14px #ef4444) drop-shadow(0 0 6px #fca5a5); }
+        }
+        .led-glow {
+            animation: led-flicker 1.2s ease-in-out infinite;
+        }
+
+        @keyframes spin-prop {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        .motor-spin {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: spin-prop 1s linear infinite;
+        }
+
+        /* ป้ายแสดงกระแสไฟฟ้าโดยประมาณ (mA) ระหว่างจำลองวงจร */
+        .current-badge {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f172a;
+            color: #4ade80;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 1px solid #4ade80;
+            white-space: nowrap;
+            display: none;
+            pointer-events: none;
+        }
+        .current-badge.danger {
+            color: #fca5a5;
+            border-color: #ef4444;
+        }
+
+        .tool-card { touch-action: none; }
+
+        /* ================= 🛠️ Responsive: แท็บเล็ต/มือถือแนวนอน ================= */
+        @media (max-width: 900px) {
+            header { padding: 10px 15px; }
+            header h1 { font-size: 1.1rem; }
+            .workspace { flex-direction: column; }
+            .toolbox {
+                width: 100%;
+                height: 130px;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+                border-left: none;
+                border-top: 2px solid #00d2ff;
+                padding: 10px;
+                gap: 10px;
+            }
+            .toolbox-title { display: none; }
+            .tool-card {
+                flex: 0 0 auto;
+                width: 170px;
+                padding: 8px;
+            }
+            .property-inspector { max-width: calc(100vw - 40px); }
+        }
+
+        /* ================= 🛠️ Responsive: มือถือแนวตั้ง ================= */
+        @media (max-width: 480px) {
+            header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+            header h1 { font-size: 0.9rem; }
+            .btn-sim { padding: 6px 12px; font-size: 0.85rem; }
+            .btn-back { padding: 6px 10px; font-size: 0.85rem; }
+            .action-toolbar { padding: 6px 10px; gap: 6px; }
+            .tbtn { padding: 5px 10px; font-size: 0.75rem; }
+            .toolbox { height: 110px; padding: 8px; gap: 8px; }
+            .tool-card { width: 140px; padding: 6px; gap: 8px; }
+            .tool-icon { width: 34px; height: 34px; }
+            .tool-icon svg { width: 26px; height: 26px; }
+            .tool-info h3 { font-size: 0.8rem; }
+            .tool-info p { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Virtual Circuit By.Sirawit</h1>
+        <div class="header-controls">
+            <button class="btn-sim" id="simBtn" onclick="toggleSimulation()">▶ Start Simulation</button>
+            <button class="btn-back" onclick="window.location.href='home.html'">ย้อนกลับ</button>
+        </div>
+    </header>
+
+    <div class="action-toolbar">
+        <button class="tbtn" id="btnUndo" onclick="undo()" title="เลิกทำ">↶ Undo</button>
+        <button class="tbtn" id="btnRedo" onclick="redo()" title="ทำซ้ำ">↷ Redo</button>
+        <div class="tbtn-divider"></div>
+        <button class="tbtn" id="btnRotate" onclick="rotateSelected()" title="หมุนอุปกรณ์ 90 องศา">⟳ หมุน</button>
+        <button class="tbtn" id="btnMirror" onclick="mirrorSelected()" title="พลิกกลับด้าน">⇋ พลิก</button>
+        <div class="tbtn-divider"></div>
+        <button class="tbtn tbtn-danger" id="btnDelete" onclick="deleteSelected()" title="ลบอุปกรณ์/สายไฟที่เลือกอยู่">🗑 ลบ</button>
+    </div>
+
+    <div class="workspace">
+        <div class="sandbox-board" id="sandboxBoard">
+            <div class="property-inspector" id="inspector">
+                <h4>ตั้งค่าอุปกรณ์</h4>
+                <div id="inspectorFields"></div>
+            </div>
+
+            <svg class="wires-overlay" id="wiresSvg">
+                <line id="snapGuideH" class="snap-guide" x1="0" y1="0" x2="0" y2="0" style="display:none;"></line>
+                <line id="snapGuideV" class="snap-guide" x1="0" y1="0" x2="0" y2="0" style="display:none;"></line>
+            </svg>
+        </div>
+
+        <div class="toolbox">
+            <h2 class="toolbox-title">กล่องเครื่องมือช่าง</h2>
+            
+            <div class="tool-card" data-type="battery">
+                <div class="tool-icon">
+                    <svg viewBox="0 0 100 100">
+                        <rect x="35" y="25" width="30" height="55" rx="4" fill="#2c3e50" stroke="#00d2ff" stroke-width="2"/>
+                        <rect x="43" y="17" width="14" height="8" fill="#ef4444"/>
+                        <text x="50" y="60" fill="#fff" font-size="16" text-anchor="middle" font-weight="bold">AA</text>
+                    </svg>
+                </div>
+                <div class="tool-info">
+                    <h3>แบตเตอรี่ (Adjustable)</h3>
+                    <p>ปรับเลือกขนาดและจำนวนได้</p>
+                </div>
+            </div>
+
+            <div class="tool-card" data-type="led">
+                <div class="tool-icon">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="45" r="20" fill="#e74c3c" stroke="#fff" stroke-width="2"/>
+                        <line x1="45" y1="65" x2="45" y2="85" stroke="#94a3b8" stroke-width="4"/>
+                    </svg>
+                </div>
+                <div class="tool-info">
+                    <h3>หลอดไฟ LED</h3>
+                    <p>แสดงผลแสงสว่าง</p>
+                </div>
+            </div>
+
+            <div class="tool-card" data-type="resistor">
+                <div class="tool-icon">
+                    <svg viewBox="0 0 100 100">
+                        <rect x="25" y="40" width="50" height="20" rx="10" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                        <line x1="10" y1="50" x2="25" y2="50" stroke="#fff" stroke-width="3"/>
+                    </svg>
+                </div>
+                <div class="tool-info">
+                    <h3>ตัวต้านทาน (Adjustable)</h3>
+                    <p>ปรับเปลี่ยนค่าความต้านทานได้</p>
+                </div>
+            </div>
+
+            <div class="tool-card" data-type="switch">
+                <div class="tool-icon">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="25" cy="50" r="8" fill="#bdc3c7"/>
+                        <circle cx="75" cy="50" r="8" fill="#bdc3c7"/>
+                        <line x1="25" y1="46" x2="65" y2="20" stroke="#fff" stroke-width="5"/>
+                    </svg>
+                </div>
+                <div class="tool-info">
+                    <h3>สวิตช์ Toggle</h3>
+                    <p>เปิด-ปิดตัดวงจร</p>
+                </div>
+            </div>
+
+            <div class="tool-card" data-type="motor">
+                <div class="tool-icon">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="30" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>
+                        <line x1="50" y1="25" x2="50" y2="10" stroke="#bdc3c7" stroke-width="4"/>
+                    </svg>
+                </div>
+                <div class="tool-info">
+                    <h3>มอเตอร์ DC</h3>
+                    <p>แปลงพลังงานไฟฟ้า</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔒 Guard: ต้องทำ Pre-test และ 10 วินาที ก่อนถึงจะเข้า Circuit Simulation ได้
+        (function() {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                alert('⚠️ กรุณา Login ก่อนนะครับ');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (sessionStorage.getItem('pretestDone') !== 'true') {
+                alert('⚠️ กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+            if (sessionStorage.getItem('quiz10sDone') !== 'true') {
+                alert('⚠️ กรุณาทำกิจกรรม 1 คำถาม 10 วินาที ให้เสร็จก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+            // ✅ เข้ามาได้สำเร็จ → mark ว่าเข้า Circuit Simulation แล้ว
+            sessionStorage.setItem('sandboxDone', 'true');
+        })();
+
+        const sandbox = document.getElementById('sandboxBoard');
+        const inspector = document.getElementById('inspector');
+        const inspectorFields = document.getElementById('inspectorFields');
+        const wiresSvg = document.getElementById('wiresSvg');
+        const simBtn = document.getElementById('simBtn');
+        
+        let selectedComponent = null;
+        let selectedWireGroup = null; // ย้ายมาเก็บสถานะเป็นกลุ่มเส้นวัตถุ
+        let compCountId = 0;
+        let isSimulating = false;
+
+        let activeTerminal = null; 
+        let currentWireGroup = null;
+        let currentWireWaypoints = [];
+        let wires = []; 
+
+        // ================= 🛠️ ระบบ Undo/Redo (เก็บ snapshot สถานะวงจรทั้งหมด) =================
+        let historyStack = [];
+        let redoStack = [];
+        let isRestoringSnapshot = false;
+        const MAX_HISTORY = 50;
+
+        // ================= ค่ามาตรฐานทางไฟฟ้า (สำหรับคำนวณกระแสให้สมจริงขึ้น) =================
+        const LED_FORWARD_VOLTAGE = 2.0;        // V แรงดันตกคร่อม LED สีแดงทั่วไป (Vf)
+        const LED_FORWARD_RESISTANCE = 10;      // Ω ความต้านทานภายในของ LED ขณะนำกระแส (ความชันของกราฟ I-V)
+        const LED_SAFE_MIN_MA = 2;              // mA ต่ำกว่านี้แสงจะจางมากจนแทบมองไม่เห็น
+        const LED_SAFE_MAX_MA = 30;             // mA สูงกว่านี้ LED จะไหม้
+        const MOTOR_INTERNAL_RESISTANCE = 30;   // Ω ความต้านทานขดลวดภายในมอเตอร์ DC ขนาดเล็กทั่วไป
+        const MOTOR_MIN_SPIN_MA = 15;           // mA กระแสขั้นต่ำที่มอเตอร์พอจะมีแรงบิดหมุนได้ (breakaway torque)
+        const MOTOR_RATED_MA = 60;              // mA กระแสพิกัดของมอเตอร์ (ที่ความเร็วพิกัด)
+        const MOTOR_RATED_RPM = 6000;           // RPM ความเร็วพิกัดโดยประมาณของมอเตอร์ DC ขนาดเล็กทั่วไป
+        const BATTERY_INTERNAL_RESISTANCE = 1;  // Ω ความต้านทานภายในของแบตเตอรี่ (ของจริงก็มีเสมอ ไม่ใช่ 0 โอห์มสนิท)
+
+        // ตารางสีแถบตัวต้านทานตามมาตรฐานจริง (IEC 60062): 0 ดำ 1 น้ำตาล 2 แดง 3 ส้ม 4 เหลือง 5 เขียว 6 น้ำเงิน 7 ม่วง 8 เทา 9 ขาว
+        const RESISTOR_COLOR_TABLE = ['#1c1c1c', '#8b5a2b', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#6b7280', '#f8fafc'];
+
+        // คำนวณแถบสี 3 แถบแรก (เลขนัยสำคัญ 2 หลัก + ตัวคูณ) จากค่าความต้านทานจริง
+        function getResistorBandColors(value) {
+            value = Math.round(Number(value));
+            if (!value || value <= 0) return [RESISTOR_COLOR_TABLE[0], RESISTOR_COLOR_TABLE[0], RESISTOR_COLOR_TABLE[0]];
+            let v = value;
+            let multiplier = 0;
+            while (v >= 100) { v = Math.round(v / 10); multiplier++; }
+            while (v < 10) { v = v * 10; multiplier--; }
+            const d1 = Math.floor(v / 10);
+            const d2 = v % 10;
+            const multIndex = Math.max(0, Math.min(9, multiplier));
+            return [RESISTOR_COLOR_TABLE[d1], RESISTOR_COLOR_TABLE[d2], RESISTOR_COLOR_TABLE[multIndex]];
+        }
+
+        // แปลงค่าความต้านทานเป็นข้อความอ่านง่าย เช่น 220 Ω, 4.7 kΩ
+        function formatResistance(value) {
+            value = Number(value);
+            if (value >= 1000) return (value / 1000).toString().replace(/\.0$/, '') + ' kΩ';
+            return value + ' Ω';
+        }
+
+        // ================= 🛠️ ระบบลากอุปกรณ์จากกล่องเครื่องมือมาวาง (Pointer Events รองรับทั้งเมาส์และสัมผัส) =================
+        // เดิมใช้ HTML5 native drag-and-drop (draggable + dragstart/dragover/drop) ซึ่งใช้งานบนจอสัมผัสไม่ได้เลย
+        let toolDragGhost = null;
+        let toolDragType = null;
+
+        document.querySelectorAll('.tool-card').forEach(card => {
+            card.addEventListener('pointerdown', (ev) => {
+                ev.preventDefault();
+                toolDragType = card.dataset.type;
+
+                toolDragGhost = document.createElement('div');
+                toolDragGhost.textContent = card.querySelector('.tool-info h3').textContent;
+                toolDragGhost.style.cssText = `
+                    position: fixed; z-index: 999; pointer-events: none;
+                    background: rgba(0, 210, 255, 0.9); color: #03112d; font-weight: 700;
+                    padding: 8px 14px; border-radius: 6px; font-size: 0.85rem;
+                    transform: translate(-50%, -50%); left: ${ev.clientX}px; top: ${ev.clientY}px;
+                `;
+                document.body.appendChild(toolDragGhost);
+
+                document.addEventListener('pointermove', onToolDragMove);
+                document.addEventListener('pointerup', onToolDragEnd);
+            });
+        });
+
+        function onToolDragMove(ev) {
+            if (!toolDragGhost) return;
+            toolDragGhost.style.left = `${ev.clientX}px`;
+            toolDragGhost.style.top = `${ev.clientY}px`;
+        }
+
+        function onToolDragEnd(ev) {
+            document.removeEventListener('pointermove', onToolDragMove);
+            document.removeEventListener('pointerup', onToolDragEnd);
+            if (toolDragGhost) { toolDragGhost.remove(); toolDragGhost = null; }
+            if (!toolDragType) return;
+
+            // ซ่อนกระดานสายไฟไม่เกี่ยว ใช้ elementFromPoint เช็คว่าปล่อยนิ้ว/เมาส์เหนือกระดานหรือไม่
+            const dropTarget = document.elementFromPoint(ev.clientX, ev.clientY);
+            if (dropTarget && (dropTarget === sandbox || sandbox.contains(dropTarget))) {
+                const rect = sandbox.getBoundingClientRect();
+                const x = ev.clientX - rect.left - 50;
+                const y = ev.clientY - rect.top - 50;
+                createComponent(toolDragType, x, y);
+                pushHistory();
+            }
+            toolDragType = null;
+        }
+
+        function createComponent(type, x, y, forcedId = null, extraData = null) {
+            const comp = document.createElement('div');
+            if (forcedId) {
+                comp.id = forcedId;
+            } else {
+                compCountId++;
+                comp.id = `comp-${type}-${compCountId}`;
+            }
+            comp.className = `dropped-component comp-${type}`;
+            comp.style.left = `${x}px`;
+            comp.style.top = `${y}px`;
+            comp.dataset.type = type;
+            comp.dataset.rotation = (extraData && extraData.rotation) || '0';
+            comp.dataset.mirrored = (extraData && extraData.mirrored) || '0';
+
+            if (type === 'battery') {
+                comp.dataset.batType = (extraData && extraData.batType) || 'AA';
+                comp.dataset.batCount = (extraData && extraData.batCount) || '1';
+            } else if (type === 'resistor') {
+                comp.dataset.resValue = (extraData && extraData.resValue) || '220';
+            } else if (type === 'switch' && extraData && extraData.state) {
+                comp.dataset.state = extraData.state;
+            }
+
+            renderComponentContent(comp, type);
+            applyTransform(comp);
+
+            comp.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                // 🛠️ ถ้ากำลังลากสายไฟอยู่ (คลิกขั้วต่อแรกไปแล้ว) การคลิกตัวอุปกรณ์อื่นถือเป็นการปักจุดพล็อต ไม่ใช่การเลือกอุปกรณ์นั้น
+                if (activeTerminal) { addWaypointDuringDraw(ev); return; }
+                selectComponent(comp, type);
+            });
+
+            let isDragging = false;
+            let movedDuringDrag = false;
+            let startX, startY;
+
+            // 🛠️ ใช้ Pointer Events (รองรับทั้งเมาส์และสัมผัส) แทน mousedown/mousemove/mouseup เดิม
+            // และใช้ setPointerCapture ผูก event กับตัวอุปกรณ์เอง แทนการแปะ listener ไว้ที่ document ทุกครั้งที่สร้างอุปกรณ์ใหม่ (กันปัญหา listener รั่วสะสม)
+            comp.addEventListener('pointerdown', (ev) => {
+                if (ev.target.classList.contains('terminal') || ev.target.tagName === 'SELECT' || ev.target.classList.contains('wire-handle')) return;
+                isDragging = true;
+                movedDuringDrag = false;
+                startX = ev.clientX - comp.offsetLeft;
+                startY = ev.clientY - comp.offsetTop;
+                comp.style.cursor = 'grabbing';
+                comp.setPointerCapture(ev.pointerId);
+            });
+
+            comp.addEventListener('pointermove', (ev) => {
+                if (!isDragging) return;
+                movedDuringDrag = true;
+                // 🛠️ FIX: จำกัดขอบเขตการลากไว้ในกระดานเสมอ ไม่ให้ลากหลุดไปซ่อนหลังกล่องเครื่องมือได้อีก
+                const boardRect = sandbox.getBoundingClientRect();
+                let newLeft = ev.clientX - startX;
+                let newTop = ev.clientY - startY;
+                const maxLeft = boardRect.width - comp.offsetWidth;
+                const maxTop = boardRect.height - comp.offsetHeight;
+                newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                newTop = Math.max(0, Math.min(newTop, maxTop));
+                comp.style.left = `${newLeft}px`;
+                comp.style.top = `${newTop}px`;
+                updateConnectedWires();
+            });
+
+            comp.addEventListener('pointerup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    comp.style.cursor = 'move';
+                    if (movedDuringDrag) pushHistory();
+                }
+            });
+
+            sandbox.appendChild(comp);
+            bindTerminalEvents(comp);
+            selectComponent(comp, type);
+        }
+
+        function renderComponentContent(comp, type) {
+            let innerSvg = '';
+            let labelName = '';
+
+            if (type === 'battery') {
+                const batType = comp.dataset.batType;
+                const count = parseInt(comp.dataset.batCount);
+
+                if (batType === '9V') {
+                    innerSvg = `
+                        <svg width="90" height="75" viewBox="0 0 100 80">
+                            <rect x="15" y="15" width="70" height="60" rx="4" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                            <rect x="15" y="45" width="70" height="30" fill="#ff7700" rx="2"/>
+                            <circle cx="35" cy="15" r="7" fill="#ef4444"/>
+                            <circle cx="65" cy="15" r="7" fill="#22c55e"/>
+                            <text x="50" y="40" fill="#fff" font-size="18" text-anchor="middle" font-weight="bold">9V</text>
+                        </svg>
+                    `;
+                    labelName = 'Battery 9V';
+                } else {
+                    let widthSvg = count * 32 + 15;
+                    let batteryBlocks = '';
+                    for(let i=0; i<count; i++) {
+                        let offset = i * 32 + 5;
+                        batteryBlocks += `
+                            <rect x="${offset}" y="15" width="28" height="60" rx="3" fill="#0284c7" stroke="#334155" stroke-width="1.5"/>
+                            <rect x="${offset + 8}" y="8" width="12" height="8" fill="#ef4444" rx="1"/>
+                            <text x="${offset + 14}" y="50" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold" transform="rotate(-90 ${offset+14} 50)">AA 1.5V</text>
+                        `;
+                    }
+                    innerSvg = `<svg width="${widthSvg}" height="75" viewBox="0 0 ${widthSvg} 80">${batteryBlocks}</svg>`;
+                    labelName = `ถ่าน AA`;
+                }
+            } else if (type === 'resistor') {
+                const resValue = comp.dataset.resValue;
+                const bandColors = getResistorBandColors(resValue);
+                innerSvg = `
+                    <svg viewBox="0 0 100 100">
+                        <line x1="0" y1="50" x2="100" y2="50" stroke="#94a3b8" stroke-width="4"/>
+                        <rect x="25" y="38" width="50" height="24" rx="6" fill="#e8d5b7" stroke="#a1824a" stroke-width="2"/>
+                        <rect x="33" y="38" width="6" height="24" fill="${bandColors[0]}"/>
+                        <rect x="43" y="38" width="6" height="24" fill="${bandColors[1]}"/>
+                        <rect x="53" y="38" width="6" height="24" fill="${bandColors[2]}"/>
+                        <rect x="66" y="38" width="6" height="24" fill="#d4af37"/>
+                    </svg>
+                `;
+                labelName = formatResistance(resValue);
+            } else if (type === 'led') {
+                innerSvg = `
+                    <svg viewBox="0 0 100 100">
+                        <line x1="40" y1="60" x2="40" y2="95" stroke="#94a3b8" stroke-width="4"/>
+                        <line x1="60" y1="60" x2="60" y2="95" stroke="#94a3b8" stroke-width="4"/>
+                        <rect x="30" y="55" width="40" height="10" fill="#cbd5e1" rx="2"/>
+                        <path id="${comp.id}-led-bulb" d="M 35 55 C 35 20, 65 20, 65 55 Z" fill="#ef4444" opacity="0.85" stroke="#b91c1c" stroke-width="2"/>
+                        <g id="${comp.id}-explosion" style="display: none;">
+                            <path d="M 20 20 L 35 40 L 15 55 L 40 45 L 50 15 L 60 45 L 85 45 L 65 55 L 75 80 L 50 60 Z" fill="#f59e0b" opacity="0.9"/>
+                            <circle cx="50" cy="35" r="15" fill="#78716c" opacity="0.7"/>
+                            <text x="50" y="40" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">💥 POP!</text>
+                        </g>
+                    </svg>
+                `;
+                labelName = 'LED';
+            } else if (type === 'switch') {
+                innerSvg = `
+                    <svg viewBox="0 0 100 100">
+                        <rect x="15" y="30" width="70" height="40" rx="6" fill="#475569" stroke="#334155" stroke-width="2"/>
+                        <circle cx="35" cy="50" r="8" fill="#1e293b"/>
+                        <circle cx="65" cy="50" r="8" fill="#1e293b"/>
+                        <line id="${comp.id}-lever" x1="35" y1="50" x2="65" y2="30" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round"/>
+                    </svg>
+                `;
+                labelName = 'Switch';
+            } else if (type === 'motor') {
+                innerSvg = `
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="30" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>
+                        <rect x="42" y="10" width="16" height="12" fill="#cbd5e1"/>
+                        <g id="${comp.id}-propeller">
+                            <circle cx="50" cy="50" r="6" fill="#f59e0b"/>
+                            <path d="M 46 50 Q 20 35 15 50 Q 20 65 46 50 Z" fill="#f59e0b"/>
+                            <path d="M 54 50 Q 80 35 85 50 Q 80 65 54 50 Z" fill="#f59e0b"/>
+                        </g>
+                    </svg>
+                `;
+                labelName = 'DC Motor';
+            }
+
+            const badgeHtml = (type === 'led' || type === 'motor')
+                ? `<div class="current-badge" id="${comp.id}-current-badge"></div>`
+                : '';
+
+            comp.innerHTML = `
+                ${badgeHtml}
+                <span class="comp-label">${labelName}</span>
+                <div class="comp-visual" id="${comp.id}-visual">
+                    ${innerSvg}
+                    <div class="terminals">
+                        <div class="terminal pos" data-term="pos" id="${comp.id}-t-pos" title="ขั้วบวก (+)"></div>
+                        <div class="terminal neg" data-term="neg" id="${comp.id}-t-neg" title="ขั้วลบ (-)"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ================= 🛠️ ระบบหมุน/พลิกอุปกรณ์ =================
+        // ใช้ CSS transform บนกลุ่ม .comp-visual เท่านั้น (ไอคอน+ขั้วต่อ) ไม่กระทบตัวหนังสือ
+        // getTerminalCenter() อ่านตำแหน่งจริงจาก getBoundingClientRect() อยู่แล้ว จึงคำนวณตำแหน่งสายไฟถูกต้องอัตโนมัติไม่ว่าจะหมุน/พลิกแค่ไหน
+        function applyTransform(comp) {
+            const visual = comp.querySelector('.comp-visual');
+            if (!visual) return;
+            const rotation = parseInt(comp.dataset.rotation || '0');
+            const mirrored = comp.dataset.mirrored === '1';
+            visual.style.transform = `rotate(${rotation}deg) scaleX(${mirrored ? -1 : 1})`;
+        }
+
+        function rotateSelected() {
+            if (!selectedComponent) return;
+            const cur = parseInt(selectedComponent.dataset.rotation || '0');
+            selectedComponent.dataset.rotation = String((cur + 90) % 360);
+            applyTransform(selectedComponent);
+            updateConnectedWires();
+            if (isSimulating) checkCircuitLogic();
+            pushHistory();
+        }
+
+        function mirrorSelected() {
+            if (!selectedComponent) return;
+            const cur = selectedComponent.dataset.mirrored === '1';
+            selectedComponent.dataset.mirrored = cur ? '0' : '1';
+            applyTransform(selectedComponent);
+            updateConnectedWires();
+            if (isSimulating) checkCircuitLogic();
+            pushHistory();
+        }
+
+        function selectComponent(comp, type) {
+            clearWireSelection(); 
+            if (selectedComponent) selectedComponent.classList.remove('selected-active');
+            selectedComponent = comp;
+            selectedComponent.classList.add('selected-active');
+
+            inspector.style.display = 'block';
+            inspectorFields.innerHTML = '';
+
+            if (type === 'battery') {
+                const currentType = comp.dataset.batType;
+                const currentCount = comp.dataset.batCount;
+
+                const typeRow = document.createElement('div');
+                typeRow.className = 'property-row';
+                typeRow.innerHTML = `
+                    <label>ประเภท (Type)</label>
+                    <select id="propBatType">
+                        <option value="AA" ${currentType === 'AA' ? 'selected' : ''}>ถ่าน AA (1.5V)</option>
+                        <option value="9V" ${currentType === '9V' ? 'selected' : ''}>แบตเตอรี่ 9V</option>
+                    </select>
+                `;
+                inspectorFields.appendChild(typeRow);
+
+                const countRow = document.createElement('div');
+                countRow.className = 'property-row';
+                countRow.id = 'propCountContainer';
+                countRow.style.display = currentType === '9V' ? 'none' : 'flex';
+                countRow.innerHTML = `
+                    <label>จำนวนก้อน (Count)</label>
+                    <select id="propBatCount">
+                        <option value="1" ${currentCount === '1' ? 'selected' : ''}>1 ก้อน</option>
+                        <option value="2" ${currentCount === '2' ? 'selected' : ''}>2 ก้อน</option>
+                        <option value="3" ${currentCount === '3' ? 'selected' : ''}>3 ก้อน</option>
+                        <option value="4" ${currentCount === '4' ? 'selected' : ''}>4 ก้อน</option>
+                    </select>
+                `;
+                inspectorFields.appendChild(countRow);
+
+                document.getElementById('propBatType').addEventListener('change', (e) => {
+                    comp.dataset.batType = e.target.value;
+                    if (e.target.value === '9V') {
+                        document.getElementById('propCountContainer').style.display = 'none';
+                        comp.dataset.batCount = '1';
+                        document.getElementById('propBatCount').value = '1';
+                    } else {
+                        document.getElementById('propCountContainer').style.display = 'flex';
+                        // 🛠️ FIX: ซิงก์ dropdown ให้ตรงกับค่าจริง กันเคสสลับ AA(4ก้อน) -> 9V -> กลับมา AA แล้ว dropdown ค้างโชว์ "4 ก้อน" ทั้งที่รูป/พลังงานเป็น 1 ก้อนจริงๆ
+                        document.getElementById('propBatCount').value = comp.dataset.batCount;
+                    }
+                    renderComponentContent(comp, 'battery');
+                    applyTransform(comp);
+                    bindTerminalEvents(comp);
+                    updateConnectedWires();
+                    if (isSimulating) checkCircuitLogic();
+                    pushHistory();
+                });
+
+                document.getElementById('propBatCount').addEventListener('change', (e) => {
+                    comp.dataset.batCount = e.target.value;
+                    renderComponentContent(comp, 'battery');
+                    applyTransform(comp);
+                    bindTerminalEvents(comp);
+                    updateConnectedWires();
+                    if (isSimulating) checkCircuitLogic();
+                    pushHistory();
+                });
+
+            } else if (type === 'resistor') {
+                const currentRes = comp.dataset.resValue;
+                const RESISTOR_PRESETS = [100, 220, 330, 470, 1000, 2200, 4700, 10000, 22000, 47000, 100000];
+                const optionsHtml = RESISTOR_PRESETS.map(v =>
+                    `<option value="${v}" ${String(v) === currentRes ? 'selected' : ''}>${formatResistance(v)}</option>`
+                ).join('');
+                const resRow = document.createElement('div');
+                resRow.className = 'property-row';
+                resRow.innerHTML = `
+                    <label>ความต้านทาน (Resistance)</label>
+                    <select id="propResValue">${optionsHtml}</select>
+                `;
+                inspectorFields.appendChild(resRow);
+
+                document.getElementById('propResValue').addEventListener('change', (e) => {
+                    comp.dataset.resValue = e.target.value;
+                    renderComponentContent(comp, 'resistor');
+                    applyTransform(comp);
+                    bindTerminalEvents(comp);
+                    updateConnectedWires();
+                    if (isSimulating) checkCircuitLogic();
+                    pushHistory();
+                });
+            } else if (type === 'switch') {
+                const swRow = document.createElement('div');
+                swRow.className = 'property-row';
+                const isClosed = comp.dataset.state === 'closed';
+                swRow.innerHTML = `
+                    <label>สถานะสวิตช์</label>
+                    <select id="propSwitchState">
+                        <option value="open" ${!isClosed ? 'selected' : ''}>เปิดวงจร (OFF)</option>
+                        <option value="closed" ${isClosed ? 'selected' : ''}>ปิดวงจร (ON)</option>
+                    </select>
+                `;
+                inspectorFields.appendChild(swRow);
+
+                document.getElementById('propSwitchState').addEventListener('change', (e) => {
+                    comp.dataset.state = e.target.value;
+                    const lever = document.getElementById(`${comp.id}-lever`);
+                    if (lever) {
+                        if (e.target.value === 'closed') {
+                            lever.setAttribute("x2", "65");
+                            lever.setAttribute("y2", "50");
+                        } else {
+                            lever.setAttribute("x2", "65");
+                            lever.setAttribute("y2", "30");
+                        }
+                    }
+                    if (isSimulating) checkCircuitLogic();
+                    pushHistory();
+                });
+            } else {
+                inspectorFields.innerHTML = `<p style="font-size:0.85rem;color:#88a4e6;">อุปกรณ์ชิ้นนี้ไม่มีตัวเลือกปรับสเปกเพิ่มเติม</p>`;
+            }
+            updateToolbarButtons();
+        }
+
+        sandbox.addEventListener('click', (e) => {
+            // 🛠️ กำลังลากสายไฟอยู่ (คลิกขั้วต่อแรกไปแล้ว) คลิกที่ว่างบนกระดานถือเป็นการปักจุดพล็อต (waypoint) ไม่ใช่การยกเลิก/เลือกอย่างอื่น
+            if (activeTerminal) { addWaypointDuringDraw(e); return; }
+
+            if (inspector.contains(e.target) || e.target.classList.contains('terminal')) return;
+            // ดักว่าถ้าคลิกโดนสายไฟ (polyline) จะไม่ล้างการเลือกสายไฟ (ให้ตัว g.onclick ของสายไฟจัดการเอง)
+            if (e.target.tagName === 'polyline') return;
+            
+            if (selectedComponent) {
+                selectedComponent.classList.remove('selected-active');
+                selectedComponent = null;
+            }
+            clearWireSelection(); 
+            inspector.style.display = 'none';
+            updateToolbarButtons();
+        });
+
+        // ================= 🛠️ ระบบวาดและลบสายไฟแบบสมบูรณ์ไร้รอยต่อ =================
+        function bindTerminalEvents(comp) {
+            comp.querySelectorAll('.terminal').forEach(term => {
+                term.onclick = null; 
+                term.onclick = function(ev) {
+                    ev.stopPropagation();
+                    handleTerminalClick(term);
+                };
+            });
+        }
+
+        function getTerminalCenter(terminalEl) {
+            const rect = terminalEl.getBoundingClientRect();
+            const boardRect = sandbox.getBoundingClientRect();
+            return {
+                x: rect.left - boardRect.left + (rect.width / 2),
+                y: rect.top - boardRect.top + (rect.height / 2)
+            };
+        }
+
+        // แปลงลิสต์จุด {x,y} เป็นข้อความสำหรับ attribute "points" ของ SVG polyline
+        function polylinePointsStr(points) {
+            return points.map(p => `${p.x},${p.y}`).join(' ');
+        }
+
+        // ระยะห่างจากจุด p ถึงส่วนของเส้นตรง a-b (point-to-segment distance) — ใช้หาว่าจะแทรก waypoint ตรงไหน
+        function pointSegmentDistance(p, a, b) {
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+            let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+        }
+
+        // หา index ของส่วนเส้นที่ใกล้จุดคลิกที่สุดในเส้นทางทั้งหมด (from -> waypoints -> to)
+        function nearestSegmentIndex(pathPoints, clickPoint) {
+            let minDist = Infinity, minIdx = 0;
+            for (let i = 0; i < pathPoints.length - 1; i++) {
+                const d = pointSegmentDistance(clickPoint, pathPoints[i], pathPoints[i + 1]);
+                if (d < minDist) { minDist = d; minIdx = i; }
+            }
+            return minIdx;
+        }
+
+        // ================= 🛠️ เส้นไกด์แนวตั้ง/แนวนอน (smart guide) ตอนลาก/วางสายไฟ =================
+        const SNAP_THRESHOLD_PX = 10;
+
+        function showSnapGuideV(x) {
+            const boardRect = sandbox.getBoundingClientRect();
+            const el = document.getElementById('snapGuideV');
+            el.setAttribute('x1', x); el.setAttribute('y1', 0);
+            el.setAttribute('x2', x); el.setAttribute('y2', boardRect.height);
+            el.style.display = 'block';
+            document.getElementById('snapGuideH').style.display = 'none';
+        }
+        function showSnapGuideH(y) {
+            const boardRect = sandbox.getBoundingClientRect();
+            const el = document.getElementById('snapGuideH');
+            el.setAttribute('x1', 0); el.setAttribute('y1', y);
+            el.setAttribute('x2', boardRect.width); el.setAttribute('y2', y);
+            el.style.display = 'block';
+            document.getElementById('snapGuideV').style.display = 'none';
+        }
+        function hideSnapGuides() {
+            document.getElementById('snapGuideH').style.display = 'none';
+            document.getElementById('snapGuideV').style.display = 'none';
+        }
+
+        // ถ้าตำแหน่งปัจจุบันใกล้แนวตั้ง/แนวนอนจากจุดยึด (anchor) มากพอ ให้ "ดูด" เข้าเส้นตรงนั้น พร้อมโชว์เส้นไกด์
+        // ถ้าคลาดจากแนวไปทั้งสองทาง (ขยับเฉียง) ถือว่าผู้ใช้ไม่ต้องการเส้นตรงแล้ว จะคืนค่าตำแหน่งจริงโดยไม่ดูด
+        function snapToAxis(anchor, rawPoint) {
+            const dx = rawPoint.x - anchor.x;
+            const dy = rawPoint.y - anchor.y;
+            if (Math.abs(dx) <= SNAP_THRESHOLD_PX && Math.abs(dy) > SNAP_THRESHOLD_PX) {
+                showSnapGuideV(anchor.x);
+                return { x: anchor.x, y: rawPoint.y };
+            }
+            if (Math.abs(dy) <= SNAP_THRESHOLD_PX && Math.abs(dx) > SNAP_THRESHOLD_PX) {
+                showSnapGuideH(anchor.y);
+                return { x: rawPoint.x, y: anchor.y };
+            }
+            hideSnapGuides();
+            return { x: rawPoint.x, y: rawPoint.y };
+        }
+
+        function handleTerminalClick(terminal) {
+            const center = getTerminalCenter(terminal);
+
+            if (!activeTerminal) {
+                clearWireSelection();
+                activeTerminal = terminal;
+                currentWireWaypoints = [];
+
+                // 🛠️ ปรับมาเก็บสายไฟในรูปของกลุ่มวัตถุ <g> เพื่อยัดเส้นล่องหนและเส้นจริงคู่กัน (ใช้ polyline รองรับหลายจุดหักมุม)
+                const newWireGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                
+                // 1. เส้นล่องหนตัวหนา (ความหนา 20px) สำหรับรับแรงกดจากเมาส์/นิ้วโดยเฉพาะ เล็งง่าย 100%
+                const touchLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                touchLine.setAttribute("points", polylinePointsStr([center, center]));
+                touchLine.setAttribute("fill", "none");
+                touchLine.setAttribute("stroke", "transparent");
+                touchLine.setAttribute("stroke-width", "20");
+                touchLine.setAttribute("pointer-events", "stroke");
+                
+                // 2. เส้นจริงสีแดง/ดำ
+                const realLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                realLine.setAttribute("points", polylinePointsStr([center, center]));
+                realLine.setAttribute("fill", "none");
+                const wireColor = terminal.dataset.term === 'pos' ? '#ef4444' : '#1e293b';
+                realLine.setAttribute("stroke", wireColor);
+                realLine.setAttribute("stroke-width", "4");
+                realLine.setAttribute("stroke-linecap", "round");
+                realLine.setAttribute("stroke-linejoin", "round");
+                realLine.className.baseVal = "real-wire";
+
+                newWireGroup.appendChild(touchLine);
+                newWireGroup.appendChild(realLine);
+                
+                newWireGroup.onclick = function(e) { handleWireGroupClick(newWireGroup, e); };
+                
+                wiresSvg.appendChild(newWireGroup);
+                attachWireGrabHandlers(newWireGroup);
+                currentWireGroup = newWireGroup;
+                document.addEventListener('pointermove', moveWire);
+            } else {
+                const fromCompId = activeTerminal.parentNode.parentNode.id;
+                const toCompId = terminal.parentNode.parentNode.id;
+                
+                if (fromCompId === toCompId) {
+                    cancelCurrentWire();
+                    return;
+                }
+                
+                document.removeEventListener('pointermove', moveWire);
+                
+                const fromCenter = getTerminalCenter(activeTerminal);
+                const finalCenter = getTerminalCenter(terminal);
+                const fullPoints = [fromCenter, ...currentWireWaypoints, finalCenter];
+                currentWireGroup.querySelectorAll('polyline').forEach(pl => {
+                    pl.setAttribute('points', polylinePointsStr(fullPoints));
+                });
+                
+                wires.push({
+                    groupElement: currentWireGroup,
+                    fromTerminalId: activeTerminal.id,
+                    toTerminalId: terminal.id,
+                    waypoints: currentWireWaypoints
+                });
+
+                selectWireGroup(currentWireGroup);
+
+                activeTerminal = null;
+                currentWireGroup = null;
+                currentWireWaypoints = [];
+                hideSnapGuides();
+                if (isSimulating) checkCircuitLogic();
+                pushHistory();
+            }
+        }
+
+        // 🛠️ ระหว่างลากสายไฟ คลิกจุดใดๆ บนกระดาน (ที่ไม่ใช่ขั้วต่อ) จะปักเป็นจุดหักมุมของสายไฟเส้นนี้
+        function addWaypointDuringDraw(ev) {
+            if (!activeTerminal || !currentWireGroup) return;
+            const boardRect = sandbox.getBoundingClientRect();
+            const rawPoint = { x: ev.clientX - boardRect.left, y: ev.clientY - boardRect.top };
+            const fromCenter = getTerminalCenter(activeTerminal);
+            const anchor = currentWireWaypoints.length > 0 ? currentWireWaypoints[currentWireWaypoints.length - 1] : fromCenter;
+            const point = snapToAxis(anchor, rawPoint);
+            currentWireWaypoints.push(point);
+            moveWire(ev); // รีเฟรชเส้นให้ต่อจากจุดใหม่ทันที
+        }
+
+        // คลิกที่ตัวสายไฟ: ถ้ายังไม่ถูกเลือกอยู่ ให้เลือกก่อน / ถ้าเลือกอยู่แล้ว คลิกซ้ำจะแทรกจุดหักมุมใหม่ตรงตำแหน่งที่คลิก
+        let suppressNextWireClick = false;
+
+        function handleWireGroupClick(gEl, ev) {
+            ev.stopPropagation();
+            if (suppressNextWireClick) { suppressNextWireClick = false; return; } // เพิ่งลากปลายสายไฟเสร็จ ไม่ต้องทำอะไรซ้ำ
+            if (activeTerminal) { addWaypointDuringDraw(ev); return; }
+
+            if (selectedWireGroup === gEl) {
+                insertWaypointAtClick(gEl, ev);
+            } else {
+                selectWireGroup(gEl);
+            }
+        }
+
+        // 🛠️ กดค้างแล้วลากตรงบนตัวสายไฟ (ไม่ต้องคลิกเลือกก่อน) = จับปลายที่ใกล้จุดกดที่สุดมาลากได้ทันที
+        // ถ้าแค่แตะ/คลิกเฉยๆ ไม่ลาก จะปล่อยให้ระบบคลิกปกติ (เลือก/แทรกจุด) ทำงานตามเดิม
+        function attachWireGrabHandlers(gEl) {
+            let startX = 0, startY = 0, dragging = false, nearestEnd = null;
+
+            function onGrabMove(ev) {
+                if (dragging) return;
+                const distMoved = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+                if (distMoved > 6) {
+                    dragging = true;
+                    suppressNextWireClick = true;
+                    document.removeEventListener('pointermove', onGrabMove);
+                    document.removeEventListener('pointerup', onGrabEnd);
+                    selectWireGroup(gEl);
+                    const handle = gEl.querySelector(`.wire-handle[data-end-type="${nearestEnd}"]`);
+                    if (handle) startWireEndDrag(handle, nearestEnd);
+                }
+            }
+
+            function onGrabEnd() {
+                document.removeEventListener('pointermove', onGrabMove);
+                document.removeEventListener('pointerup', onGrabEnd);
+                dragging = false;
+            }
+
+            gEl.addEventListener('pointerdown', (ev) => {
+                if (ev.target.classList.contains('wire-handle')) return; // ให้ handle เดิมจัดการของมันเอง ไม่ต้องแย่งกัน
+                const wireData = wires.find(w => w.groupElement === gEl);
+                if (!wireData) return; // สายไฟยังไม่เสร็จ (กำลังถูกวาดอยู่)
+
+                const fromEl = document.getElementById(wireData.fromTerminalId);
+                const toEl = document.getElementById(wireData.toTerminalId);
+                if (!fromEl || !toEl) return;
+
+                const boardRect = sandbox.getBoundingClientRect();
+                const pressPoint = { x: ev.clientX - boardRect.left, y: ev.clientY - boardRect.top };
+                const fromCenter = getTerminalCenter(fromEl);
+                const toCenter = getTerminalCenter(toEl);
+                const pathPoints = [fromCenter, ...(wireData.waypoints || []), toCenter];
+                const segIdx = nearestSegmentIndex(pathPoints, pressPoint);
+                const totalSegments = pathPoints.length - 1;
+                nearestEnd = segIdx < totalSegments / 2 ? 'from' : 'to';
+
+                startX = ev.clientX; startY = ev.clientY;
+                dragging = false;
+
+                document.addEventListener('pointermove', onGrabMove);
+                document.addEventListener('pointerup', onGrabEnd);
+            });
+        }
+
+        function insertWaypointAtClick(gEl, ev) {
+            const wireData = wires.find(w => w.groupElement === gEl);
+            if (!wireData) return;
+            const fromEl = document.getElementById(wireData.fromTerminalId);
+            const toEl = document.getElementById(wireData.toTerminalId);
+            if (!fromEl || !toEl) return;
+
+            const boardRect = sandbox.getBoundingClientRect();
+            const clickPoint = { x: ev.clientX - boardRect.left, y: ev.clientY - boardRect.top };
+            const fromCenter = getTerminalCenter(fromEl);
+            const toCenter = getTerminalCenter(toEl);
+            const pathPoints = [fromCenter, ...(wireData.waypoints || []), toCenter];
+
+            const segIdx = nearestSegmentIndex(pathPoints, clickPoint);
+            if (!wireData.waypoints) wireData.waypoints = [];
+            wireData.waypoints.splice(segIdx, 0, clickPoint);
+
+            rebuildWirePolyline(wireData);
+            addWireHandles(gEl);
+            pushHistory();
+        }
+
+        // สร้างพิกัดเส้นทางล่าสุดของสายไฟเส้นหนึ่ง แล้วอัปเดตทั้ง polyline และจุดจับทุกจุดให้ตรงกัน
+        function rebuildWirePolyline(wireData) {
+            const fromEl = document.getElementById(wireData.fromTerminalId);
+            const toEl = document.getElementById(wireData.toTerminalId);
+            if (!fromEl || !toEl) return;
+            const fromCenter = getTerminalCenter(fromEl);
+            const toCenter = getTerminalCenter(toEl);
+            const points = [fromCenter, ...(wireData.waypoints || []), toCenter];
+            const pointsStr = polylinePointsStr(points);
+            wireData.groupElement.querySelectorAll('polyline').forEach(pl => pl.setAttribute('points', pointsStr));
+
+            const fromHandle = wireData.groupElement.querySelector('.wire-handle[data-end-type="from"]');
+            const toHandle = wireData.groupElement.querySelector('.wire-handle[data-end-type="to"]');
+            if (fromHandle) { fromHandle.setAttribute('cx', fromCenter.x); fromHandle.setAttribute('cy', fromCenter.y); }
+            if (toHandle) { toHandle.setAttribute('cx', toCenter.x); toHandle.setAttribute('cy', toCenter.y); }
+            (wireData.waypoints || []).forEach((wp, i) => {
+                const h = wireData.groupElement.querySelector(`.wire-handle[data-waypoint-index="${i}"]`);
+                if (h) { h.setAttribute('cx', wp.x); h.setAttribute('cy', wp.y); }
+            });
+        }
+
+        function selectWireGroup(gEl) {
+            clearWireSelection();
+            if (selectedComponent) {
+                selectedComponent.classList.remove('selected-active');
+                selectedComponent = null;
+                inspector.style.display = 'none';
+            }
+            selectedWireGroup = gEl;
+            const realLine = selectedWireGroup.querySelector('.real-wire');
+            if (realLine) realLine.classList.add('wire-selected');
+            addWireHandles(gEl); // 🛠️ โชว์จุดจับที่ปลายทั้งสองข้าง เพื่อให้ลากไปเปลี่ยนขั้วต่อได้
+            updateToolbarButtons();
+        }
+
+        function clearWireSelection() {
+            if (selectedWireGroup) {
+                const realLine = selectedWireGroup.querySelector('.real-wire');
+                if (realLine) realLine.classList.remove('wire-selected');
+                removeWireHandles(selectedWireGroup);
+                selectedWireGroup = null;
+            }
+            updateToolbarButtons();
+        }
+
+        // ================= 🛠️ ระบบแก้ไข/ย้ายปลายสายไฟ (คลิกเลือกสายไฟ แล้วลากจุดจับไปขั้วต่ออื่น) =================
+        let draggingWireEnd = null; // { wireData, handleEl, endType, fixedTerminalId }
+
+        function addWireHandles(gEl) {
+            removeWireHandles(gEl);
+            const wireData = wires.find(w => w.groupElement === gEl);
+            if (!wireData) return;
+            const fromTerm = document.getElementById(wireData.fromTerminalId);
+            const toTerm = document.getElementById(wireData.toTerminalId);
+            if (!fromTerm || !toTerm) return;
+
+            gEl.appendChild(createWireHandle(getTerminalCenter(fromTerm), 'from'));
+            (wireData.waypoints || []).forEach((wp, i) => {
+                gEl.appendChild(createWireHandle(wp, 'waypoint', i));
+            });
+            gEl.appendChild(createWireHandle(getTerminalCenter(toTerm), 'to'));
+        }
+
+        function removeWireHandles(gEl) {
+            if (!gEl) return;
+            gEl.querySelectorAll('.wire-handle').forEach(h => h.remove());
+        }
+
+        function createWireHandle(center, endType, waypointIndex) {
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            handle.setAttribute("cx", center.x);
+            handle.setAttribute("cy", center.y);
+            const isWaypoint = endType === 'waypoint';
+            handle.setAttribute("r", isWaypoint ? 7 : 9);
+            handle.setAttribute("fill", isWaypoint ? "#22d3ee" : "#ffaa00");
+            handle.setAttribute("stroke", "#ffffff");
+            handle.setAttribute("stroke-width", "2");
+            handle.classList.add('wire-handle');
+            handle.dataset.endType = endType;
+            if (isWaypoint) handle.dataset.waypointIndex = String(waypointIndex);
+            handle.addEventListener('click', (e) => e.stopPropagation()); // กันคลิกตกลอดไปแทรก waypoint ซ้อนบนสายไฟข้างล่าง
+            handle.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                if (isWaypoint) {
+                    startWaypointDrag(handle, waypointIndex);
+                } else {
+                    startWireEndDrag(handle, endType);
+                }
+            });
+            return handle;
+        }
+
+        // ================= 🛠️ ลาก/ลบจุดหักมุม (waypoint) ของสายไฟที่เลือกอยู่ =================
+        let draggingWaypoint = null; // { wireData, handleEl, index, moved }
+
+        function startWaypointDrag(handleEl, index) {
+            const wireData = wires.find(w => w.groupElement === selectedWireGroup);
+            if (!wireData) return;
+            draggingWaypoint = { wireData, handleEl, index, moved: false };
+            document.addEventListener('pointermove', onWaypointDragMove);
+            document.addEventListener('pointerup', onWaypointDragEnd);
+        }
+
+        function onWaypointDragMove(ev) {
+            if (!draggingWaypoint) return;
+            draggingWaypoint.moved = true;
+            const boardRect = sandbox.getBoundingClientRect();
+            const rawPoint = { x: ev.clientX - boardRect.left, y: ev.clientY - boardRect.top };
+
+            const wireData = draggingWaypoint.wireData;
+            const index = draggingWaypoint.index;
+            const fromEl = document.getElementById(wireData.fromTerminalId);
+            const anchor = index === 0
+                ? (fromEl ? getTerminalCenter(fromEl) : rawPoint)
+                : wireData.waypoints[index - 1];
+            const point = snapToAxis(anchor, rawPoint);
+
+            wireData.waypoints[index] = point;
+            draggingWaypoint.handleEl.setAttribute('cx', point.x);
+            draggingWaypoint.handleEl.setAttribute('cy', point.y);
+            rebuildWirePolyline(wireData);
+        }
+
+        function onWaypointDragEnd() {
+            if (!draggingWaypoint) return;
+            document.removeEventListener('pointermove', onWaypointDragMove);
+            document.removeEventListener('pointerup', onWaypointDragEnd);
+            hideSnapGuides();
+
+            if (!draggingWaypoint.moved) {
+                // คลิกเฉยๆ ไม่ได้ลากไปไหน = ลบจุดนี้ทิ้ง
+                draggingWaypoint.wireData.waypoints.splice(draggingWaypoint.index, 1);
+                rebuildWirePolyline(draggingWaypoint.wireData);
+                addWireHandles(draggingWaypoint.wireData.groupElement);
+            }
+
+            draggingWaypoint = null;
+            if (isSimulating) checkCircuitLogic();
+            pushHistory();
+        }
+
+        function startWireEndDrag(handleEl, endType) {
+            const wireData = wires.find(w => w.groupElement === selectedWireGroup);
+            if (!wireData) return;
+            draggingWireEnd = {
+                wireData,
+                handleEl,
+                endType,
+                fixedTerminalId: endType === 'from' ? wireData.toTerminalId : wireData.fromTerminalId
+            };
+            document.addEventListener('pointermove', onWireEndDragMove);
+            document.addEventListener('pointerup', onWireEndDragEnd);
+        }
+
+        function onWireEndDragMove(ev) {
+            if (!draggingWireEnd) return;
+            const boardRect = sandbox.getBoundingClientRect();
+            const rawPoint = { x: ev.clientX - boardRect.left, y: ev.clientY - boardRect.top };
+
+            const fromEl = document.getElementById(draggingWireEnd.wireData.fromTerminalId);
+            const toEl = document.getElementById(draggingWireEnd.wireData.toTerminalId);
+            const waypoints = draggingWireEnd.wireData.waypoints || [];
+
+            // จุดยึดสำหรับ snap คือจุดถัดไปตามเส้นทาง (waypoint ที่ใกล้ที่สุด หรือถ้าไม่มีก็ขั้วตรงข้าม)
+            const anchor = draggingWireEnd.endType === 'from'
+                ? (waypoints.length > 0 ? waypoints[0] : (toEl ? getTerminalCenter(toEl) : rawPoint))
+                : (waypoints.length > 0 ? waypoints[waypoints.length - 1] : (fromEl ? getTerminalCenter(fromEl) : rawPoint));
+            const point = snapToAxis(anchor, rawPoint);
+
+            const fromCenter = draggingWireEnd.endType === 'from' ? point : (fromEl ? getTerminalCenter(fromEl) : point);
+            const toCenter = draggingWireEnd.endType === 'to' ? point : (toEl ? getTerminalCenter(toEl) : point);
+            const points = [fromCenter, ...waypoints, toCenter];
+            draggingWireEnd.wireData.groupElement.querySelectorAll('polyline').forEach(pl => {
+                pl.setAttribute('points', polylinePointsStr(points));
+            });
+            draggingWireEnd.handleEl.setAttribute('cx', point.x);
+            draggingWireEnd.handleEl.setAttribute('cy', point.y);
+        }
+
+        function onWireEndDragEnd(ev) {
+            if (!draggingWireEnd) return;
+            document.removeEventListener('pointermove', onWireEndDragMove);
+            document.removeEventListener('pointerup', onWireEndDragEnd);
+            hideSnapGuides();
+
+            const gEl = draggingWireEnd.wireData.groupElement;
+            // ซ่อนตัวสายไฟชั่วคราว ไม่งั้น elementFromPoint จะเจอเส้น/จุดจับของตัวเองแทนขั้วต่อจริง
+            gEl.style.display = 'none';
+            const dropTarget = document.elementFromPoint(ev.clientX, ev.clientY);
+            gEl.style.display = '';
+
+            let newTerminal = (dropTarget && dropTarget.classList.contains('terminal')) ? dropTarget : null;
+
+            if (newTerminal) {
+                const newCompId = newTerminal.parentNode.parentNode.id;
+                const fixedTerm = document.getElementById(draggingWireEnd.fixedTerminalId);
+                const fixedCompId = fixedTerm ? fixedTerm.parentNode.parentNode.id : null;
+                // ห้ามให้ปลายสายทั้งสองข้างไปจบที่อุปกรณ์ชิ้นเดียวกัน
+                if (newCompId === fixedCompId) newTerminal = null;
+            }
+
+            if (newTerminal) {
+                if (draggingWireEnd.endType === 'from') {
+                    draggingWireEnd.wireData.fromTerminalId = newTerminal.id;
+                } else {
+                    draggingWireEnd.wireData.toTerminalId = newTerminal.id;
+                }
+            }
+
+            // ไม่ว่าจะย้ายสำเร็จหรือถูกยกเลิก ให้ snap เส้นกลับไปยังตำแหน่งขั้วต่อจริงเสมอ แล้วรีเฟรชจุดจับ
+            updateConnectedWires();
+            addWireHandles(gEl);
+            draggingWireEnd = null;
+
+            if (isSimulating) checkCircuitLogic();
+            pushHistory();
+        }
+
+        // กด Backspace หรือ Delete เพื่อสั่งลบสายไฟเส้นประสีส้ม หรือลบอุปกรณ์ที่กำลังเลือกอยู่
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                // อย่าลบขณะโฟกัสอยู่ที่ dropdown ตั้งค่าต่างๆ ใน property inspector
+                const activeTag = document.activeElement ? document.activeElement.tagName : '';
+                if (activeTag === 'SELECT' || activeTag === 'INPUT') return;
+                deleteSelected();
+            }
+            if (e.key === 'Escape') cancelCurrentWire();
+        });
+
+        // 🛠️ ใช้ร่วมกันทั้งปุ่ม Backspace/Delete บนคีย์บอร์ด และปุ่มถังขยะบน toolbar (สำหรับคนใช้มือถือที่กด Backspace ไม่ได้)
+        function deleteSelected() {
+            if (selectedWireGroup) {
+                removeWireGroupElement(selectedWireGroup);
+                clearWireSelection();
+            } else if (selectedComponent) {
+                removeComponent(selectedComponent);
+            }
+        }
+
+        // 🛠️ FIX: เดิมไม่มีฟังก์ชันลบอุปกรณ์เลย ลากไปซ่อนหลังกล่องเครื่องมือแค่มองไม่เห็น แต่จริงๆ ยังอยู่ในวงจร
+        function removeComponent(comp) {
+            // ลบสายไฟทุกเส้นที่ต่ออยู่กับขั้วของอุปกรณ์ชิ้นนี้ไปด้วย ไม่ให้เหลือสายไฟลอยค้าง
+            const remainingWires = [];
+            wires.forEach(wire => {
+                const connectedToThisComp =
+                    wire.fromTerminalId.startsWith(`${comp.id}-t-`) ||
+                    wire.toTerminalId.startsWith(`${comp.id}-t-`);
+                if (connectedToThisComp) {
+                    wiresSvg.removeChild(wire.groupElement);
+                } else {
+                    remainingWires.push(wire);
+                }
+            });
+            wires = remainingWires;
+
+            comp.remove();
+            selectedComponent = null;
+            inspector.style.display = 'none';
+
+            if (isSimulating) checkCircuitLogic();
+            updateToolbarButtons();
+            pushHistory();
+        }
+
+        function moveWire(ev) {
+            if (!currentWireGroup || !activeTerminal) return;
+            const boardRect = sandbox.getBoundingClientRect();
+            const rawMouse = { x: ev.clientX - boardRect.left, y: ev.clientY - boardRect.top };
+            const fromCenter = getTerminalCenter(activeTerminal);
+            const anchor = currentWireWaypoints.length > 0 ? currentWireWaypoints[currentWireWaypoints.length - 1] : fromCenter;
+            const mouse = snapToAxis(anchor, rawMouse);
+            const points = [fromCenter, ...currentWireWaypoints, mouse];
+            currentWireGroup.querySelectorAll('polyline').forEach(pl => {
+                pl.setAttribute('points', polylinePointsStr(points));
+            });
+        }
+
+        function cancelCurrentWire() {
+            document.removeEventListener('pointermove', moveWire);
+            if (currentWireGroup) wiresSvg.removeChild(currentWireGroup);
+            activeTerminal = null;
+            currentWireGroup = null;
+            currentWireWaypoints = [];
+            hideSnapGuides();
+        }
+
+        function removeWireGroupElement(gEl) {
+            const idx = wires.findIndex(w => w.groupElement === gEl);
+            if (idx !== -1) {
+                wiresSvg.removeChild(gEl);
+                wires.splice(idx, 1);
+                if (isSimulating) checkCircuitLogic();
+                pushHistory();
+            }
+        }
+
+        function updateConnectedWires() {
+            wires.forEach(wire => rebuildWirePolyline(wire));
+        }
+
+        // ================= 🛠️ ระบบ Undo/Redo =================
+        // แนวทาง: เก็บ "ภาพรวมทั้งวงจร" (snapshot) เป็น JS object ธรรมดาหลังทำทุกการกระทำที่สำคัญ
+        // undo/redo คือการล้างกระดานแล้วสร้างอุปกรณ์/สายไฟใหม่ทั้งหมดจาก snapshot ที่เก็บไว้
+
+        function captureSnapshot() {
+            const components = Array.from(document.querySelectorAll('.dropped-component')).map(c => ({
+                id: c.id,
+                type: c.dataset.type,
+                left: c.style.left,
+                top: c.style.top,
+                rotation: c.dataset.rotation || '0',
+                mirrored: c.dataset.mirrored || '0',
+                batType: c.dataset.batType,
+                batCount: c.dataset.batCount,
+                resValue: c.dataset.resValue,
+                state: c.dataset.state,
+            }));
+            const wireList = wires.map(w => ({
+                from: w.fromTerminalId,
+                to: w.toTerminalId,
+                waypoints: (w.waypoints || []).map(p => ({ x: p.x, y: p.y }))
+            }));
+            return { components, wires: wireList, compCountId };
+        }
+
+        function pushHistory() {
+            if (isRestoringSnapshot) return; // กำลังทำ undo/redo อยู่ ห้ามบันทึกทับ
+            historyStack.push(captureSnapshot());
+            if (historyStack.length > MAX_HISTORY) historyStack.shift();
+            redoStack = []; // การกระทำใหม่ ทำให้ redo เดิมใช้ไม่ได้แล้ว
+            updateToolbarButtons();
+        }
+
+        function restoreSnapshot(snap) {
+            isRestoringSnapshot = true;
+
+            document.querySelectorAll('.dropped-component').forEach(c => c.remove());
+            wiresSvg.querySelectorAll('g').forEach(g => g.remove());
+            wires = [];
+            selectedComponent = null;
+            selectedWireGroup = null;
+            inspector.style.display = 'none';
+
+            compCountId = snap.compCountId;
+
+            snap.components.forEach(cd => {
+                createComponent(cd.type, parseFloat(cd.left) || 0, parseFloat(cd.top) || 0, cd.id, cd);
+            });
+
+            snap.wires.forEach(w => {
+                const fromTerm = document.getElementById(w.from);
+                const toTerm = document.getElementById(w.to);
+                if (!fromTerm || !toTerm) return;
+                const waypoints = (w.waypoints || []).map(p => ({ x: p.x, y: p.y }));
+                wires.push({
+                    groupElement: createWireGroupBetween(fromTerm, toTerm, waypoints),
+                    fromTerminalId: w.from,
+                    toTerminalId: w.to,
+                    waypoints
+                });
+            });
+
+            if (selectedComponent) selectedComponent.classList.remove('selected-active');
+            selectedComponent = null;
+            inspector.style.display = 'none';
+
+            isRestoringSnapshot = false;
+            if (isSimulating) checkCircuitLogic();
+            updateToolbarButtons();
+        }
+
+        // สร้าง <g> เส้นสายไฟระหว่าง 2 ขั้วที่ทราบตำแหน่งอยู่แล้วทันที พร้อม waypoints ที่ระบุ (ใช้ตอน undo/redo ที่ไม่ได้ผ่านการลากด้วยเมาส์จริง)
+        function createWireGroupBetween(fromTerm, toTerm, waypoints = []) {
+            const fromCenter = getTerminalCenter(fromTerm);
+            const toCenter = getTerminalCenter(toTerm);
+            const points = [fromCenter, ...waypoints, toCenter];
+            const pointsStr = polylinePointsStr(points);
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+            const touchLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            touchLine.setAttribute("points", pointsStr);
+            touchLine.setAttribute("fill", "none");
+            touchLine.setAttribute("stroke", "transparent");
+            touchLine.setAttribute("stroke-width", "20");
+            touchLine.setAttribute("pointer-events", "stroke");
+
+            const realLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            realLine.setAttribute("points", pointsStr);
+            realLine.setAttribute("fill", "none");
+            const wireColor = fromTerm.dataset.term === 'pos' ? '#ef4444' : '#1e293b';
+            realLine.setAttribute("stroke", wireColor);
+            realLine.setAttribute("stroke-width", "4");
+            realLine.setAttribute("stroke-linecap", "round");
+            realLine.setAttribute("stroke-linejoin", "round");
+            realLine.className.baseVal = "real-wire";
+
+            g.appendChild(touchLine);
+            g.appendChild(realLine);
+            g.onclick = function(e) { handleWireGroupClick(g, e); };
+            wiresSvg.appendChild(g);
+            attachWireGrabHandlers(g);
+            return g;
+        }
+
+        function undo() {
+            if (historyStack.length < 2) return; // ไม่มีอะไรให้ย้อนกลับไปมากกว่านี้แล้ว
+            redoStack.push(historyStack.pop());
+            restoreSnapshot(historyStack[historyStack.length - 1]);
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            const next = redoStack.pop();
+            historyStack.push(next);
+            restoreSnapshot(next);
+        }
+
+        function updateToolbarButtons() {
+            const btnUndo = document.getElementById('btnUndo');
+            const btnRedo = document.getElementById('btnRedo');
+            const btnRotate = document.getElementById('btnRotate');
+            const btnMirror = document.getElementById('btnMirror');
+            const btnDelete = document.getElementById('btnDelete');
+            if (btnUndo) btnUndo.disabled = historyStack.length < 2;
+            if (btnRedo) btnRedo.disabled = redoStack.length === 0;
+            if (btnRotate) btnRotate.disabled = !selectedComponent;
+            if (btnMirror) btnMirror.disabled = !selectedComponent;
+            if (btnDelete) btnDelete.disabled = !selectedComponent && !selectedWireGroup;
+        }
+
+        // ================= ระบบจำลองวงจรขั้นแอดวานซ์ =================
+        function toggleSimulation() {
+            isSimulating = !isSimulating;
+            if (isSimulating) {
+                simBtn.innerText = "■ Stop Simulation";
+                simBtn.classList.add('simulating');
+                checkCircuitLogic();
+            } else {
+                simBtn.innerText = "▶ Start Simulation";
+                simBtn.classList.remove('simulating');
+                stopAllEffects();
+            }
+        }
+
+        // ================= 🛠️ เอนจินวิเคราะห์วงจรไฟฟ้าแบบเต็มรูป (Modified Nodal Analysis) =================
+        // รองรับหลายโหลด/หลายสวิตช์/วงจรผสมอนุกรม-ขนานพร้อมกันจริง แทนของเดิมที่มองเห็นโหลดได้แค่ตัวเดียว
+
+        // แก้ระบบสมการเชิงเส้น Ax = b ด้วย Gaussian elimination (แบบ partial pivoting)
+        // ถ้าคอลัมน์ไหน "ลอย" ไม่ต่อกับวงจรเลย (ไม่มี pivot ให้ใช้) จะข้ามไปแล้วให้ unknown ตัวนั้นเป็น 0 แทนที่จะพัง
+        function gaussianSolve(A, b) {
+            const n = b.length;
+            const M = A.map((row, i) => [...row, b[i]]);
+            const usedRows = new Set();
+            const pivotRowForCol = new Array(n).fill(-1);
+
+            for (let col = 0; col < n; col++) {
+                let maxRow = -1, maxVal = 1e-9;
+                for (let r = 0; r < n; r++) {
+                    if (usedRows.has(r)) continue;
+                    if (Math.abs(M[r][col]) > maxVal) { maxVal = Math.abs(M[r][col]); maxRow = r; }
+                }
+                if (maxRow === -1) continue;
+                usedRows.add(maxRow);
+                pivotRowForCol[col] = maxRow;
+
+                const pivotVal = M[maxRow][col];
+                for (let r = 0; r < n; r++) {
+                    if (r === maxRow) continue;
+                    const factor = M[r][col] / pivotVal;
+                    if (factor === 0) continue;
+                    for (let c = col; c <= n; c++) M[r][c] -= factor * M[maxRow][c];
+                }
+            }
+
+            const x = new Array(n).fill(0);
+            for (let col = 0; col < n; col++) {
+                const r = pivotRowForCol[col];
+                if (r === -1) { x[col] = 0; continue; }
+                x[col] = M[r][n] / M[r][col];
+            }
+            return x;
+        }
+
+        // ตัวแทนวงจรไฟฟ้าในรูปกราฟ: net = จุดต่อที่ถูกเชื่อมด้วยสายไฟ, resistor = ตัวนำไฟฟ้าระหว่าง 2 net,
+        // source = แหล่งจ่ายแรงดันในอุดมคติ (แบต/LED ที่ ON) ซึ่งมีความต้านทานอนุกรมเล็กน้อยกำกับไว้เพื่อความสมจริง+กันสมการ singular
+        class CircuitSolver {
+            constructor() { this.resistors = []; this.sources = []; this.nextNet = 0; }
+            newNet() { return this.nextNet++; }
+            addResistor(p, n, r) { this.resistors.push({ p, n, r }); }
+            addSource(p, n, v, rin) { this.sources.push({ p, n, v, rin }); }
+
+            solve() {
+                const numNets = this.nextNet;
+                const numRealUnknowns = numNets - 1; // net 0 = ground ไม่นับเป็น unknown
+                const numSources = this.sources.length;
+                const size = numRealUnknowns + numSources * 2; // แต่ละ source เพิ่ม virtual node + branch current
+                if (size === 0) return { voltages: [0], vsCurrents: [] };
+
+                const A = Array.from({ length: size }, () => new Array(size).fill(0));
+                const b = new Array(size).fill(0);
+                const idx = (net) => (net === 0 ? -1 : net - 1);
+
+                this.resistors.forEach(({ p, n, r }) => {
+                    const g = 1 / r;
+                    const ip = idx(p), iN = idx(n);
+                    if (ip >= 0) A[ip][ip] += g;
+                    if (iN >= 0) A[iN][iN] += g;
+                    if (ip >= 0 && iN >= 0) { A[ip][iN] -= g; A[iN][ip] -= g; }
+                });
+
+                const virtualBase = numRealUnknowns;
+                const vsBase = numRealUnknowns + numSources;
+                this.sources.forEach(({ p, n, v, rin }, k) => {
+                    const vnet = virtualBase + k, vs = vsBase + k;
+                    const g = 1 / rin;
+                    const ip = idx(p);
+                    A[vnet][vnet] += g;
+                    if (ip >= 0) { A[ip][ip] += g; A[vnet][ip] -= g; A[ip][vnet] -= g; }
+                    const iN = idx(n);
+                    A[vnet][vs] += 1; A[vs][vnet] += 1;
+                    if (iN >= 0) { A[iN][vs] += -1; A[vs][iN] += -1; }
+                    b[vs] += v;
+                });
+
+                const x = gaussianSolve(A, b);
+                const voltages = [0];
+                for (let net = 1; net < numNets; net++) voltages.push(x[idx(net)]);
+                const vsCurrents = [];
+                for (let k = 0; k < numSources; k++) vsCurrents.push(x[vsBase + k]);
+                return { voltages, vsCurrents };
+            }
+        }
+
+        // Union-Find รวมขั้วต่อที่เชื่อมกันด้วยสายไฟ หรือสวิตช์ที่ปิดอยู่ ให้กลายเป็น "net" เดียวกัน
+        function buildTerminalNets(components) {
+            const parent = {};
+            function find(x) {
+                if (!(x in parent)) parent[x] = x;
+                while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+                return x;
+            }
+            function union(a, b) {
+                const ra = find(a), rb = find(b);
+                if (ra !== rb) parent[ra] = rb;
+            }
+            components.forEach(c => { find(`${c.id}-t-pos`); find(`${c.id}-t-neg`); });
+            wires.forEach(w => union(w.fromTerminalId, w.toTerminalId));
+            components.forEach(c => {
+                if (c.dataset.type === 'switch' && c.dataset.state === 'closed') {
+                    union(`${c.id}-t-pos`, `${c.id}-t-neg`);
+                }
+            });
+            return { find };
+        }
+
+        // สร้างวงจรจากอุปกรณ์ทั้งหมดบนกระดาน แล้วแก้สมการหาแรงดัน/กระแสจริงของทุกโหลดพร้อมกัน
+        function buildAndSolveCircuit() {
+            const components = Array.from(document.querySelectorAll('.dropped-component'));
+            const batteries = components.filter(c => c.dataset.type === 'battery');
+            if (batteries.length === 0) return null;
+
+            const { find } = buildTerminalNets(components);
+            const groundRoot = find(`${batteries[0].id}-t-neg`);
+            const netIndexMap = new Map();
+            let nextIndex = 1; // 0 สงวนไว้เป็น ground
+            function netIndexOf(terminalId) {
+                const root = find(terminalId);
+                if (root === groundRoot) return 0;
+                if (!netIndexMap.has(root)) netIndexMap.set(root, nextIndex++);
+                return netIndexMap.get(root);
+            }
+
+            // อุปกรณ์แต่ละชิ้น -> element พร้อม net ของขั้วบวก/ลบ (สวิตช์ไม่ต้องมี element เพราะจัดการผ่าน union แล้ว)
+            const resistorEls = [];
+            const batteryEls = [];
+            const ledEls = [];
+            const motorEls = [];
+
+            components.forEach(c => {
+                const type = c.dataset.type;
+                const nodeP = netIndexOf(`${c.id}-t-pos`);
+                const nodeN = netIndexOf(`${c.id}-t-neg`);
+                if (type === 'battery') {
+                    const v = c.dataset.batType === '9V' ? 9.0 : parseInt(c.dataset.batCount) * 1.5;
+                    batteryEls.push({ comp: c, nodeP, nodeN, v });
+                } else if (type === 'resistor') {
+                    resistorEls.push({ comp: c, nodeP, nodeN, r: parseInt(c.dataset.resValue) });
+                } else if (type === 'motor') {
+                    motorEls.push({ comp: c, nodeP, nodeN, r: MOTOR_INTERNAL_RESISTANCE });
+                } else if (type === 'led') {
+                    ledEls.push({ comp: c, nodeP, nodeN });
+                }
+            });
+
+            // วนแก้สมการ: เริ่มจากสมมติ LED ทุกดวง "ติด" ก่อน ถ้าคำนวณแล้วกระแสติดลบ (แปลว่าแรงดันไม่พอ/ต่อกลับขั้ว)
+            // ก็ปิดดวงนั้นแล้วคำนวณใหม่ ทำซ้ำจนเสถียร (ไม่มี LED ไหนต้องปิดเพิ่มแล้ว)
+            let ledOnStates = ledEls.map(() => true);
+            let voltages, vsCurrents, solver, motorCurrentOf = () => 0;
+
+            for (let iter = 0; iter < ledEls.length + 2; iter++) {
+                solver = new CircuitSolver();
+                // จองหมายเลข net 0..(nextIndex-1) ให้ตรงกับที่ใช้จริง
+                for (let i = 0; i < nextIndex; i++) solver.newNet();
+
+                batteryEls.forEach(e => solver.addSource(e.nodeP, e.nodeN, e.v, BATTERY_INTERNAL_RESISTANCE));
+                resistorEls.forEach(e => solver.addResistor(e.nodeP, e.nodeN, e.r));
+                motorEls.forEach(e => solver.addResistor(e.nodeP, e.nodeN, e.r));
+
+                const ledSourceIndexInVs = []; // index ของ LED ใน sources array (ตามลำดับ battery ก่อน แล้วค่อย LED ที่ ON)
+                ledEls.forEach((e, i) => {
+                    if (ledOnStates[i]) {
+                        ledSourceIndexInVs.push(solver.sources.length);
+                        solver.addSource(e.nodeP, e.nodeN, LED_FORWARD_VOLTAGE, LED_FORWARD_RESISTANCE);
+                    } else {
+                        ledSourceIndexInVs.push(-1); // ปิดอยู่ ไม่ได้เป็น source ในรอบนี้
+                    }
+                });
+
+                const result = solver.solve();
+                voltages = result.voltages;
+                vsCurrents = result.vsCurrents;
+
+                let changed = false;
+                ledEls.forEach((e, i) => {
+                    if (ledOnStates[i]) {
+                        const current = vsCurrents[ledSourceIndexInVs[i]];
+                        if (current < 0) { ledOnStates[i] = false; changed = true; }
+                    }
+                });
+                if (!changed) break;
+            }
+
+            motorCurrentOf = (e) => (voltages[e.nodeP] - voltages[e.nodeN]) / e.r;
+
+            return { voltages, vsCurrents, batteryEls, ledEls, ledOnStates, motorEls, motorCurrentOf };
+        }
+
+        function checkCircuitLogic() {
+            stopAllEffects();
+
+            const result = buildAndSolveCircuit();
+            if (!result) return;
+
+            recomputeAndApplyLoadVisuals(result);
+        }
+
+        // แยกฟังก์ชันย่อยสำหรับ apply ผลลัพธ์กลับเข้าอุปกรณ์ทุกตัว ให้โค้ดอ่านง่ายขึ้น
+        function recomputeAndApplyLoadVisuals(result) {
+            const { ledEls, ledOnStates, motorEls, motorCurrentOf, voltages } = result;
+
+            // หา current ของ LED แต่ละดวงที่ ON โดย re-derive จาก voltages (V ตกคร่อม - Vf) / Rf เพื่อความชัวร์และง่ายต่อการอ่านโค้ด
+            ledEls.forEach((e, i) => {
+                const comp = e.comp;
+                const bulb = document.getElementById(`${comp.id}-led-bulb`);
+                const explosionG = document.getElementById(`${comp.id}-explosion`);
+                const badge = document.getElementById(`${comp.id}-current-badge`);
+
+                if (!ledOnStates[i]) {
+                    if (bulb) { bulb.style.display = 'block'; bulb.setAttribute("fill", "#450a0a"); }
+                    if (explosionG) explosionG.style.display = 'none';
+                    if (badge) badge.style.display = 'none';
+                    return;
+                }
+
+                const vDrop = voltages[e.nodeP] - voltages[e.nodeN];
+                const current_mA = ((vDrop - LED_FORWARD_VOLTAGE) / LED_FORWARD_RESISTANCE) * 1000;
+
+                if (badge) {
+                    badge.style.display = 'block';
+                    badge.textContent = `${current_mA.toFixed(1)} mA`;
+                    badge.classList.toggle('danger', current_mA > LED_SAFE_MAX_MA);
+                }
+
+                if (current_mA > LED_SAFE_MAX_MA) {
+                    if (bulb) bulb.style.display = 'none';
+                    if (explosionG) explosionG.style.display = 'block';
+                } else if (current_mA < 0.01) {
+                    // แทบไม่มีกระแสไหลเลย (เช่น สวิตช์เปิดอยู่ วงจรขาดจริงๆ) ให้แสดงเป็นดับสนิท ไม่ใช่แค่แสงจาง
+                    if (bulb) bulb.setAttribute("fill", "#450a0a");
+                    if (badge) badge.style.display = 'none';
+                } else if (current_mA < LED_SAFE_MIN_MA) {
+                    if (bulb) bulb.setAttribute("fill", "#7f1d1d");
+                } else {
+                    if (bulb) {
+                        bulb.setAttribute("fill", "#ef4444");
+                        bulb.classList.add('led-glow');
+                    }
+                }
+            });
+
+            motorEls.forEach(e => {
+                const comp = e.comp;
+                const propeller = document.getElementById(`${comp.id}-propeller`);
+                const badge = document.getElementById(`${comp.id}-current-badge`);
+                const current_mA = motorCurrentOf(e) * 1000;
+                // แปลงกระแสเป็นความเร็วรอบ (RPM) โดยเทียบสัดส่วนกับกระแส/ความเร็วพิกัดของมอเตอร์
+                const rpm = current_mA >= MOTOR_MIN_SPIN_MA ? (current_mA / MOTOR_RATED_MA) * MOTOR_RATED_RPM : 0;
+
+                if (badge) {
+                    if (current_mA < 0.01) {
+                        badge.style.display = 'none';
+                    } else {
+                        badge.style.display = 'block';
+                        badge.textContent = `${Math.round(rpm)} RPM`;
+                        badge.classList.remove('danger');
+                    }
+                }
+
+                if (propeller && current_mA >= MOTOR_MIN_SPIN_MA) {
+                    propeller.classList.add('motor-spin');
+                    const duration = Math.max(0.15, Math.min(1.4, 80 / current_mA));
+                    propeller.style.animationDuration = `${duration}s`;
+                }
+            });
+        }
+
+
+        function stopAllEffects() {
+            document.querySelectorAll('[id$="-led-bulb"]').forEach(bulb => {
+                bulb.style.display = 'block';
+                bulb.setAttribute("fill", "#ef4444");
+                bulb.classList.remove('led-glow');
+            });
+            document.querySelectorAll('[id$="-explosion"]').forEach(exp => {
+                exp.style.display = 'none';
+            });
+            document.querySelectorAll('[id$="-propeller"]').forEach(prop => {
+                prop.classList.remove('motor-spin');
+                prop.style.animationDuration = '';
+            });
+            document.querySelectorAll('.current-badge').forEach(badge => {
+                badge.style.display = 'none';
+            });
+        }
+
+        // ================= เริ่มต้น: บันทึก snapshot กระดานเปล่าไว้เป็นจุดแรกของ Undo/Redo =================
+        pushHistory();
+        updateToolbarButtons();
+    </script>
+</body>
+</html>

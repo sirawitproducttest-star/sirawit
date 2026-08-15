@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
+        const _supabaseGuard = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function checkPretestGuard() {
+            // ถ้ามี cache ใน session → ผ่านได้เลย (ไม่ต้องรอ DB)
+            if (sessionStorage.getItem('pretestDone') === 'true' &&
+                sessionStorage.getItem('quiz10sDone') === 'true' &&
+                sessionStorage.getItem('sandboxDone') === 'true') return;
+
+            var name = sessionStorage.getItem('studentName');
+            var cls = sessionStorage.getItem('studentClass');
+            var no = sessionStorage.getItem('studentNumber');
+
+            if (!name) {
+                alert('⚠️ กรุณา Login ก่อนนะครับ');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // ตรวจสอบลำดับทีละกิจกรรม
+            if (sessionStorage.getItem('pretestDone') !== 'true') {
+                // Query Supabase เช็คสถานะจริง
+                var res = await _supabaseGuard.from('students')
+                    .select('pretest_done')
+                    .eq('name', name).eq('class', cls).eq('no', no)
+                    .single();
+
+                if (res.data && res.data.pretest_done === true) {
+                    sessionStorage.setItem('pretestDone', 'true');
+                } else {
+                    alert('⚠️ กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อนนะครับ');
+                    window.location.href = 'home.html';
+                    return;
+                }
+            }
+
+            if (sessionStorage.getItem('quiz10sDone') !== 'true') {
+                alert('⚠️ กรุณาทำกิจกรรม 1 คำถาม 10 วินาที ให้เสร็จก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+
+            if (sessionStorage.getItem('sandboxDone') !== 'true') {
+                alert('⚠️ กรุณาเข้าใช้ Circuit Simulation ก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+        }
+        checkPretestGuard();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mahjong 3D Layer - ช่างเซียน ม.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Chakra Petch', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .game-card {
+            background: #1e293b;
+            border: 2px solid #38bdf8;
+            border-radius: 16px;
+            max-width: 820px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .level-title {
+            font-size: 1.2rem;
+            color: #facc15;
+            font-weight: 700;
+        }
+
+        .score-info {
+            font-size: 0.95rem;
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
+        .board-container {
+            position: relative;
+            width: 100%;
+            height: 440px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tile {
+            position: absolute;
+            width: 125px;
+            height: 85px;
+            background: #1e293b;
+            border: 2px solid #38bdf8;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .tile.active {
+            background: #1e293b;
+            border-color: #38bdf8;
+            cursor: pointer;
+        }
+
+        .tile.active:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .tile.blocked {
+            background: #111827;
+            border-color: #334155;
+            opacity: 0.6;
+            filter: grayscale(60%);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .tile.selected {
+            border-color: #facc15;
+            background: rgba(250, 204, 21, 0.25);
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.7);
+            transform: translateY(-4px) scale(1.03);
+        }
+
+        .tile.matched {
+            display: none;
+        }
+
+        .tile-icon {
+            font-size: 1.6rem;
+            margin-bottom: 2px;
+        }
+
+        .tile-text {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            line-height: 1.2;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 50;
+        }
+
+        .rules-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            max-width: 500px;
+            margin-bottom: 15px;
+        }
+
+        .rules-box ul {
+            padding-left: 20px;
+        }
+
+        .btn-action {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-action:hover {
+            background: #16a34a;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-card">
+        <div class="header-bar">
+            <div class="level-title" id="lvlTitle">🀄️ Mahjong ช่างเซียน</div>
+            <div class="score-info" id="mistakesInfo">❤️❤️❤️❤️❤️</div>
+        </div>
+
+        <div class="board-container" id="boardContainer"></div>
+
+        <div class="overlay" id="startOverlay">
+            <h2 style="color:#38bdf8; margin-bottom:15px;">🀄️ Mahjong จับคู่สื่อช่าง ม.1</h2>
+            <div class="rules-box">
+                <strong>กติกาการเล่น:</strong>
+                <ul>
+                    <li>ผู้เล่นต้องลุยผ่านแบบทดสอบทั้งหมด <strong>4 ระดับความยาก (Level 1 ➔ 2 ➔ 3 ➔ 4)</strong></li>
+                    <li><strong>การจับคู่:</strong> จับคู่ระหว่าง "เครื่องมือ/วัสดุ/อุปกรณ์ไฟฟ้า" กับ
+                        "สมบัติ/วิธีใช้งาน" ที่ถูกต้อง</li>
+                    <li><strong>กลไกซ้อนชั้น:</strong> ไพ่ที่ล็อกอยู่ (มีสัญลักษณ์ 🔒) จะกดไม่ได้
+                        ต้องจับคู่ไพ่ชั้นบนให้หายไปก่อน เพื่อปลดล็อกไพ่ชั้นล่าง</li>
+                    <li><strong>โอกาสผิด:</strong> ตอบผิดได้ไม่เกิน <strong>5 ครั้ง</strong> (มีหัวใจ ❤️ 5 ดวง)
+                        ถ้าหมดต้องเริ่มใหม่ตั้งแต่ Level 1</li>
+                </ul>
+            </div>
+            <button class="btn-action" onclick="startLevel(1)">🚀 พร้อมแล้ว! เริ่มลุย Level 1</button>
+        </div>
+
+        <div class="overlay" id="winOverlay" style="display:none;">
+            <h2 style="color:#facc15; font-size:1.8rem; margin-bottom:10px;" id="winTitle">🏆 ผ่านด่านสำเร็จ!</h2>
+            <p id="winDesc" style="color:#cbd5e1; margin-bottom:20px;">...</p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                <button class="btn-action" id="btnNextLevel" onclick="nextLevelAction()">➔ ลุยต่อด่านถัดไป</button>
+                <button class="btn-action" style="background:#64748b; box-shadow:none;" onclick="goHome()">🏠
+                    กลับหน้าแรก</button>
+            </div>
+        </div>
+
+        <div class="overlay" id="loseOverlay" style="display:none;">
+            <h2 style="color:#ef4444; font-size:1.8rem; margin-bottom:10px;">💔 หมดโอกาสแล้ว</h2>
+            <p style="color:#cbd5e1; margin-bottom:20px;">ตอบผิดครบ 5 ครั้งแล้ว ไม่เป็นไรครับ ลองใหม่อีกครั้ง!</p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                <button class="btn-action" onclick="startLevel(1)">🔄 เริ่มใหม่จาก Level 1</button>
+                <button class="btn-action" style="background:#64748b; box-shadow:none;" onclick="goHome()">🏠
+                    กลับหน้าแรก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= ข้อมูลคำถาม-คำตอบแต่ละเลเวล =================
+        const DATABASE = {
+            lvl1: [
+                { id: "hammer", icon: "🔨", name: "ค้อนหงอน", text: "ใช้ตอกและงัดถอนตะปูออกจากไม้" },
+                { id: "square", icon: "📐", name: "ฉากเหล็ก", text: "ใช้วัดตรวจสอบมุมฉาก 90 องศา" },
+                { id: "tape", icon: "📏", name: "ตลับเมตร", text: "ใช้วัดระยะทางที่มีความยาวมากๆ" },
+                { id: "wood", icon: "🪵", name: "ไม้ธรรมชาติ", text: "มีลวดลายสวยงาม และเป็นฉนวนไฟฟ้า" },
+                { id: "steel", icon: "🏢", name: "เหล็กกล้า", text: "รับแรงดึงและแรงกดได้สูงมาก" },
+                { id: "glue", icon: "🧴", name: "กาวตราช้าง", text: "ติดแน่นเร็ว แต่แห้งแล้วแข็งกรอบ" }
+            ],
+            lvl2: [
+                { id: "thermo_pipe", icon: "🥤", name: "ท่อน้ำ / ขวด PET", text: "เทอร์โมพลาสติก (อ่อนตัวเมื่อโดนความร้อน)" },
+                { id: "thermo_dish", icon: "🍽️", name: "จานชามเมลามีน", text: "พลาสติกเทอร์โมเซต (ทนความร้อนสูง ไม่เปลี่ยนรูป)" },
+                { id: "alu", icon: "🥉", name: "อลูมิเนียม", text: "น้ำหนักเบา และไม่เกิดสนิมเหล็ก" },
+                { id: "saw_wood", icon: "🪚", name: "เลื่อยลันดา", text: "ฟันใหญ่ห่าง เหมาะสำหรับตัดงานไม้" },
+                { id: "saw_metal", icon: "✂️", name: "เลื่อยตัดเหล็ก", text: "ฟันถี่ เหมาะสำหรับตัดท่อ PVC/เหล็ก" },
+                { id: "pliers", icon: "🔧", name: "คีมรวม", text: "จับ ขัน และตัดลวดในตัวเดียว" },
+                { id: "glass", icon: "🪟", name: "แก้ว / กระจก", text: "ใส โปร่งแสง แต่แตกง่ายเมื่อโดนกระแทก" },
+                { id: "rubber", icon: "🛞", name: "ยางธรรมชาติ", text: "ยืดหยุ่นสูง ทนต่อแรงขูดขีด" },
+                { id: "meter_tape", icon: "📐", name: "ตลับเมตร", text: "วัดระยะทาง 0-10 เมตร ม้วนเก็บสายได้" },
+                { id: "protractor", icon: "📊", name: "ไม้โพรแทรกเตอร์", text: "ใช้วัดขนาดของมุม หน่วยเป็นองศา" },
+                { id: "glue_gun", icon: "🔫", name: "ปืนกาว", text: "ให้ความร้อนละลายแท่งกาวให้เหนียวติดงาน" },
+                { id: "screw_nut", icon: "🔩", name: "สกรูและนอต", text: "บีบอัดชิ้นงานโลหะ 2 ชิ้นเข้าด้วยกัน" }
+            ],
+            lvl3: [
+                { id: "wheel_steering", icon: "🚘", name: "พวงมาลัยรถ", text: "ส่วนวงนอกทำหน้าที่เป็น 'ล้อ' ช่วยผ่อนแรง" },
+                { id: "axle_knob", icon: "🚪", name: "แกนลูกบิดประตู", text: "แกนเหล็กชิ้นเล็กทำหน้าที่เป็น 'เพลา'" },
+                { id: "wheel_driver", icon: "🪛", name: "ด้ามจับไขควง", text: "ด้ามจับพลาสติกใหญ่ทำหน้าที่เป็น 'ล้อ'" },
+                { id: "axle_sharpener", icon: "✏️", name: "แกนกบเหลาดินสอ", text: "แกนเหล็กตรงกลางทำหน้าที่เป็น 'เพลา'" },
+                { id: "thermo_pipe3", icon: "🥤", name: "ท่อ PVC", text: "เทอร์โมพลาสติก หลอมรีไซเคิลได้" },
+                { id: "thermo_switch", icon: "🔌", name: "สวิตช์ไฟ", text: "พลาสติกเทอร์โมเซต ไม่หลอมละลาย" },
+                { id: "hammer3", icon: "🔨", name: "ค้อนหงอน", text: "ตรวจสอบหัวค้อนก่อนตอกทุกครั้ง" },
+                { id: "square3", icon: "📐", name: "ฉากเหล็ก", text: "วัดตรวจสอบมุม 90 องศา" },
+                { id: "wood3", icon: "🪵", name: "ไม้เนื้อแข็ง", text: "ทนทาน รับน้ำหนักขาโต๊ะได้ดี" },
+                { id: "steel3", icon: "🏗️", name: "เหล็กเสาอาคาร", text: "โครงสร้างที่ต้องการแรงดึงสูง" }
+            ],
+            lvl4: [
+                { id: "led", icon: "💡", name: "หลอด LED", text: "ขายาว=ขั้วบวก ขาสั้น=ขั้วลบ ต่อสลับขั้วไฟจะไม่ติด" },
+                { id: "resistor", icon: "🎯", name: "ตัวต้านทาน", text: "จำกัดปริมาณกระแสไฟฟ้าไม่ให้ไหลผ่านมากเกินไป" },
+                { id: "buzzer", icon: "🔊", name: "ออดไฟฟ้า/บัซเซอร์", text: "เปลี่ยนพลังงานไฟฟ้าเป็นเสียง ต้องต่อขั้วให้ถูก" },
+                { id: "dc_motor", icon: "⚙️", name: "มอเตอร์ไฟฟ้ากระแสตรง", text: "ใช้กับถ่านไฟฉายหรือแบตเตอรี่ พบในของเล่นเล็กๆ" },
+                { id: "ac_motor", icon: "🌀", name: "มอเตอร์ไฟฟ้ากระแสสลับ", text: "ใช้กับไฟบ้านโดยตรง พบในเครื่องซักผ้า พัดลม" },
+                { id: "hot_glue", icon: "🔥", name: "กาวร้อน", text: "แห้งเร็วมาก ยึดยาง พลาสติก โลหะ ระวังหัวปืนร้อน" },
+                { id: "latex_glue", icon: "🧪", name: "กาวลาเท็กซ์", text: "แห้งช้า เหมาะกับไม้ กระดาษ ผ้า เด็กใช้ได้ปลอดภัย" },
+                { id: "electric_drill", icon: "🛠️", name: "สว่านไฟฟ้า", text: "เจาะรูด้วยกำลังมอเตอร์ สะดวกกว่าสว่านมือ" },
+                { id: "ceiling_fan", icon: "🌬️", name: "พัดลมเพดาน", text: "ก้านเพลาเล็กตรงกลาง ใบพัด+มอเตอร์ทำหน้าที่เป็นล้อ" },
+                { id: "hand_drill", icon: "🔧", name: "สว่านมือ", text: "ใช้เฟืองผ่อนแรงหมุนดอกสว่านด้วยมือ ไม่ใช้ไฟฟ้า" }
+            ]
+        };
+
+        // สัดส่วนคู่คำถามที่กระจายลงแต่ละชั้น (index 0 = ชั้นล่างสุด) — ไม่ใช้เลขตายตัว คำนวณสัดส่วนจากจำนวนคู่จริงเสมอ
+        const LEVEL_LAYER_RATIOS = {
+            1: [1.0],
+            2: [0.6, 0.4],
+            3: [0.5, 0.3, 0.2],
+            4: [0.4, 0.35, 0.25]
+        };
+
+        let currentLvl = 1;
+        let selectedTile1 = null;
+        let selectedTile2 = null;
+        let matchedCount = 0;
+        let totalPairs = 0;
+        const MAX_LEVEL = 4;
+
+        let mistakes = 0;
+        const MAX_MISTAKES = 5;
+        let gameStartTime = null;
+
+        function updateMistakesUI() {
+            const remaining = MAX_MISTAKES - mistakes;
+            let hearts = '';
+            for (let i = 0; i < MAX_MISTAKES; i++) hearts += (i < remaining) ? '❤️' : '🖤';
+            document.getElementById('mistakesInfo').textContent = hearts;
+        }
+
+        function goHome() {
+            window.location.href = 'home.html';
+        }
+
+        function startLevel(lvl) {
+            currentLvl = lvl;
+            document.getElementById('startOverlay').style.display = 'none';
+            document.getElementById('winOverlay').style.display = 'none';
+            document.getElementById('loseOverlay').style.display = 'none';
+            const lvlNames = { 1: 'ง่าย (เรียงชั้นเดียว)', 2: 'ปานกลาง (ซ้อน 2 ชั้น)', 3: 'ยาก (ซ้อน 3 ชั้น)', 4: 'ยากสุด (ไฟฟ้า-อิเล็กทรอนิกส์)' };
+            document.getElementById('lvlTitle').textContent = `🀄️ Level ${lvl}: ${lvlNames[lvl]}`;
+
+            // นับจำนวนครั้งที่ตอบผิดต่อเนื่องกันทั้ง 4 ด่าน รีเซ็ตเฉพาะตอนเริ่มเกมใหม่จาก Level 1 เท่านั้น
+            if (lvl === 1) {
+                mistakes = 0;
+                updateMistakesUI();
+                gameStartTime = Date.now(); // ⏱️ เริ่มจับเวลาตอนเริ่มเล่น Level 1
+            }
+
+            matchedCount = 0;
+            selectedTile1 = null;
+            selectedTile2 = null;
+
+            const data = DATABASE[`lvl${lvl}`];
+            totalPairs = data.length;
+
+            buildBoard(data, lvl);
+        }
+
+        // ================= 🛠️ อัลกอริทึมแบ่งคู่ลงชั้น: การันตีแก้ได้เสมอ =================
+        // หลักการ: คำถาม-คำตอบของคู่เดียวกัน ต้องอยู่ "ชั้นเดียวกันเสมอ" ไม่แยกไปคนละชั้น
+        // เพราะกลไกบังกัน เช็คเฉพาะไพ่ชั้นสูงกว่าเท่านั้น (ชั้นเดียวกันไม่มีทางบังกันเอง)
+        // จึงไม่มีทางเกิดเคสคู่ตัวเองบังตัวเองจนแก้ไม่ได้ ไม่ว่าจะเพิ่ม/ลดจำนวนคำถามเท่าไหร่ก็ตาม
+        function splitPairsIntoLayers(pairs, ratios) {
+            const shuffled = [...pairs].sort(() => Math.random() - 0.5);
+            const n = shuffled.length;
+            const counts = ratios.map(r => Math.round(r * n));
+            let diff = n - counts.reduce((a, b) => a + b, 0);
+            counts[0] += diff; // ปรับเศษปัดเกิน/ขาดเข้าชั้นล่างสุดเสมอ
+
+            const groups = [];
+            let idx = 0;
+            counts.forEach(c => {
+                groups.push(shuffled.slice(idx, idx + Math.max(0, c)));
+                idx += c;
+            });
+            return groups;
+        }
+
+        // 🛠️ ดันไพ่ที่อยู่ "ชั้นเดียวกัน" ไม่ให้วางทับกันเองโดยไม่ตั้งใจ (สาเหตุที่การ์ดอ่านยาก)
+        // ไพ่คนละชั้นยังคงซ้อนทับกันได้ตามปกติ (นั่นคือกลไกของเกม) แก้แค่ชั้นเดียวกันเท่านั้น
+        function resolveSameLayerOverlaps(positions, tileW, tileH, margin, boardWidth, boardHeight, maxIterations = 40) {
+            for (let iter = 0; iter < maxIterations; iter++) {
+                let moved = false;
+                for (let i = 0; i < positions.length; i++) {
+                    for (let j = i + 1; j < positions.length; j++) {
+                        const a = positions[i], b = positions[j];
+                        const overlapX = Math.min(a.x + tileW, b.x + tileW) - Math.max(a.x, b.x);
+                        const overlapY = Math.min(a.y + tileH, b.y + tileH) - Math.max(a.y, b.y);
+                        if (overlapX > margin && overlapY > margin) {
+                            moved = true;
+                            // ดันออกจากกันตามแกนที่ทับซ้อนน้อยกว่า (ขยับน้อยที่สุดเท่าที่พอจะพ้นกัน)
+                            if (overlapX < overlapY) {
+                                const push = overlapX / 2 + 3;
+                                if (a.x <= b.x) { a.x -= push; b.x += push; } else { a.x += push; b.x -= push; }
+                            } else {
+                                const push = overlapY / 2 + 3;
+                                if (a.y <= b.y) { a.y -= push; b.y += push; } else { a.y += push; b.y -= push; }
+                            }
+                            a.x = Math.max(5, Math.min(boardWidth - tileW - 5, a.x));
+                            a.y = Math.max(5, Math.min(boardHeight - tileH - 5, a.y));
+                            b.x = Math.max(5, Math.min(boardWidth - tileW - 5, b.x));
+                            b.y = Math.max(5, Math.min(boardHeight - tileH - 5, b.y));
+                        }
+                    }
+                }
+                if (!moved) break;
+            }
+            return positions;
+        }
+
+        // สร้างตำแหน่งไพ่ทุกชั้น: ชั้นล่างสุดวางเป็นตารางเต็มกระดาน, ชั้นถัดไปอ้างอิงตำแหน่งจากชั้นล่าง
+        // แล้วเยื้องออกครึ่งช่อง เพื่อการันตีว่าเกิดการซ้อนทับ (บัง) จริงตามกลไกของเกม
+        function generateLayeredPositions(tileCountsPerLayer, boardWidth, boardHeight) {
+            const tileW = 125, tileH = 85, gapX = 18, gapY = 14, sameLayerMargin = 10;
+            const layerPositions = [];
+
+            const baseCount = tileCountsPerLayer[0];
+            const cols = Math.max(1, Math.floor((boardWidth + gapX) / (tileW + gapX)));
+            const rows = Math.max(1, Math.ceil(baseCount / cols));
+            const totalW = cols * (tileW + gapX) - gapX;
+            const totalH = rows * (tileH + gapY) - gapY;
+            const startX = Math.max(10, (boardWidth - totalW) / 2);
+            const startY = Math.max(10, (boardHeight - totalH) / 2);
+
+            const layer1Pos = [];
+            for (let i = 0; i < baseCount; i++) {
+                const r = Math.floor(i / cols), c = i % cols;
+                layer1Pos.push({ x: startX + c * (tileW + gapX), y: startY + r * (tileH + gapY), layer: 1 });
+            }
+            layerPositions.push(layer1Pos);
+
+            for (let L = 1; L < tileCountsPerLayer.length; L++) {
+                const count = tileCountsPerLayer[L];
+                const prevLayerPos = layerPositions[L - 1];
+                const thisLayerPos = [];
+                const refIndices = [...Array(prevLayerPos.length).keys()].sort(() => Math.random() - 0.5);
+                for (let i = 0; i < count; i++) {
+                    const ref = prevLayerPos[refIndices[i % refIndices.length]] || { x: boardWidth / 2, y: boardHeight / 2 };
+                    const maxX = boardWidth - tileW - 10;
+                    const maxY = boardHeight - tileH - 10;
+                    thisLayerPos.push({
+                        x: Math.max(10, Math.min(maxX, ref.x + (tileW / 2) * (i % 2 === 0 ? 1 : -0.4))),
+                        y: Math.max(10, Math.min(maxY, ref.y + (tileH / 2) * 0.6)),
+                        layer: L + 1
+                    });
+                }
+                resolveSameLayerOverlaps(thisLayerPos, tileW, tileH, sameLayerMargin, boardWidth, boardHeight);
+                layerPositions.push(thisLayerPos);
+            }
+            return layerPositions;
+        }
+
+        // สิ่งที่จะโชว์บนไพ่ ขึ้นกับสถานะปัจจุบัน (ล็อก/ปลดล็อก) ไม่ใช่แค่ข้อมูลดิบ
+        // ไพ่ที่ยังล็อกอยู่ (blocked) จะไม่พยายามโชว์ข้อความจริงเลย โชว์แค่กุญแจ 🔒 กันสับสน/อ่านยากตอนซ้อนกับไพ่ชั้นบน
+        function renderTileContent(tileEl) {
+            if (tileEl.classList.contains('blocked')) {
+                tileEl.innerHTML = `<div class="tile-icon" style="opacity:0.7;">🔒</div>`;
+                return;
+            }
+            if (tileEl.dataset.tileType === 'A') {
+                tileEl.innerHTML = `<div class="tile-icon">${tileEl.dataset.icon}</div><div class="tile-text">${tileEl.dataset.name}</div>`;
+            } else {
+                tileEl.innerHTML = `<div class="tile-text" style="color:#cbd5e1;">${tileEl.dataset.text}</div>`;
+            }
+        }
+
+        function buildBoard(data, lvl) {
+            const container = document.getElementById('boardContainer');
+            container.innerHTML = '';
+            const boardWidth = container.clientWidth || 780;
+            const boardHeight = container.clientHeight || 440;
+
+            const ratios = LEVEL_LAYER_RATIOS[lvl] || [1.0];
+            const groups = splitPairsIntoLayers(data, ratios);
+            const tileCounts = groups.map(g => g.length * 2);
+            const positions = generateLayeredPositions(tileCounts, boardWidth, boardHeight);
+
+            let finalTiles = [];
+            groups.forEach((groupPairs, layerIdx) => {
+                // สร้างไพ่ทั้งหมดของชั้นนี้ก่อน (ยังไม่ผูกตำแหน่ง)
+                let layerTiles = [];
+                groupPairs.forEach(pair => {
+                    layerTiles.push({ matchId: pair.id, type: 'A', icon: pair.icon, name: pair.name });
+                    layerTiles.push({ matchId: pair.id, type: 'B', text: pair.text });
+                });
+                // 🛠️ FIX: สุ่มลำดับ "ไพ่แต่ละใบ" แยกจากกันก่อนแจกตำแหน่ง (ของเดิม pop() 2 ครั้งติดกันต่อคู่
+                // ทำให้ได้ช่องติดกันเสมอ แม้จะสุ่มลำดับคู่ไว้แล้วก็ตาม คำถาม-คำตอบเลยอยู่ติดกันทุกครั้ง)
+                layerTiles.sort(() => Math.random() - 0.5);
+                const posForLayer = [...positions[layerIdx]];
+                layerTiles.forEach(tile => {
+                    tile.pos = posForLayer.pop();
+                    finalTiles.push(tile);
+                });
+            });
+
+            finalTiles.forEach((tileData, i) => {
+                const pos = tileData.pos;
+                if (!pos) return;
+                const tileEl = document.createElement('div');
+                tileEl.classList.add('tile');
+                tileEl.dataset.matchId = tileData.matchId;
+                tileEl.dataset.layer = pos.layer;
+                tileEl.dataset.id = i;
+                tileEl.dataset.tileType = tileData.type;
+                tileEl.dataset.icon = tileData.icon || '';
+                tileEl.dataset.name = tileData.name || '';
+                tileEl.dataset.text = tileData.text || '';
+                tileEl.style.left = `${pos.x}px`;
+                tileEl.style.top = `${pos.y}px`;
+                tileEl.style.zIndex = pos.layer * 10;
+
+                renderTileContent(tileEl);
+
+                tileEl.addEventListener('click', () => handleTileClick(tileEl));
+                container.appendChild(tileEl);
+            });
+
+            updateTileStates();
+        }
+
+        function updateTileStates() {
+            const tiles = Array.from(document.querySelectorAll('.tile:not(.matched)'));
+
+            tiles.forEach(tileA => {
+                const rectA = tileA.getBoundingClientRect();
+                const layerA = parseInt(tileA.dataset.layer);
+
+                let isBlocked = tiles.some(tileB => {
+                    const layerB = parseInt(tileB.dataset.layer);
+                    if (layerB <= layerA) return false;
+
+                    const rectB = tileB.getBoundingClientRect();
+                    return !(rectA.right <= rectB.left + 15 ||
+                        rectA.left >= rectB.right - 15 ||
+                        rectA.bottom <= rectB.top + 15 ||
+                        rectA.top >= rectB.bottom - 15);
+                });
+
+                if (isBlocked) {
+                    tileA.classList.remove('active');
+                    tileA.classList.add('blocked');
+                } else {
+                    tileA.classList.remove('blocked');
+                    tileA.classList.add('active');
+                }
+                renderTileContent(tileA);
+            });
+        }
+
+        function handleTileClick(tile) {
+            if (tile.classList.contains('blocked') || tile.classList.contains('matched')) return;
+
+            if (selectedTile1 === tile) {
+                tile.classList.remove('selected');
+                selectedTile1 = null;
+                return;
+            }
+
+            tile.classList.add('selected');
+
+            if (!selectedTile1) {
+                selectedTile1 = tile;
+            } else {
+                selectedTile2 = tile;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const match1 = selectedTile1.dataset.matchId;
+            const match2 = selectedTile2.dataset.matchId;
+
+            if (match1 === match2) {
+                setTimeout(() => {
+                    selectedTile1.classList.add('matched');
+                    selectedTile2.classList.add('matched');
+                    selectedTile1 = null;
+                    selectedTile2 = null;
+
+                    matchedCount++;
+
+                    updateTileStates();
+
+                    if (matchedCount === totalPairs) {
+                        showWinOverlay();
+                    }
+                }, 300);
+            } else {
+                mistakes++;
+                updateMistakesUI();
+                setTimeout(() => {
+                    selectedTile1.classList.remove('selected');
+                    selectedTile2.classList.remove('selected');
+                    selectedTile1 = null;
+                    selectedTile2 = null;
+
+                    if (mistakes >= MAX_MISTAKES) {
+                        showLoseOverlay();
+                    }
+                }, 400);
+            }
+        }
+
+        function showLoseOverlay() {
+            document.getElementById('loseOverlay').style.display = 'flex';
+            // ❤️ บันทึกคะแนนตอนเช็ด (Game Over)
+            var totalSec = gameStartTime ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
+            var mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+            var ss = (totalSec % 60).toString().padStart(2, '0');
+            var timeStr = mm + ' นาที ' + ss + ' วินาที';
+            var heartsLeft = MAX_MISTAKES - mistakes;
+            saveScoreToSupabase(matchedCount, timeStr, heartsLeft, false);
+        }
+
+        function showWinOverlay() {
+            const overlay = document.getElementById('winOverlay');
+            const title = document.getElementById('winTitle');
+            const desc = document.getElementById('winDesc');
+            const btn = document.getElementById('btnNextLevel');
+
+            if (currentLvl < MAX_LEVEL) {
+                title.textContent = `🏆 ผ่าน Level ${currentLvl} สำเร็จ!`;
+                desc.textContent = `เยี่ยมมาก! คุณจับคู่สื่อช่างใน Level ${currentLvl} ได้ครบถ้วน พร้อมลุยด่านถัดไปที่ยากขึ้นหรือยัง?`;
+                btn.textContent = `➔ ไปลุย Level ${currentLvl + 1}`;
+                btn.style.background = "#22c55e";
+            } else {
+                title.textContent = `👑 ยินดีด้วย! คุณคือช่างเซียนตัวจริง`;
+                desc.textContent = `คุณสามารถพิชิต Mahjong สื่อช่าง วัสดุศาสตร์ กลไก และไฟฟ้า-อิเล็กทรอนิกส์ได้ครบทั้ง 4 ระดับความยาก เรียบร้อยแล้ว!`;
+                btn.textContent = `🎮 เล่นใหม่อีกครั้งตั้งแต่ Level 1`;
+                btn.style.background = "#0284c7";
+            }
+
+            overlay.style.display = 'flex';
+            // ✅ Mark mahjongDone ทุกครั้งที่เกมจบ (ทั้งผ่านครบทุก Level หรือแค่ผ่าน Level ใด Level หนึ่ง)
+            sessionStorage.setItem('mahjongDone', 'true');
+            // 🏆 บันทึกคะแนนตอนจบ Level สุดท้าย (Level 4)
+            if (currentLvl >= MAX_LEVEL) {
+                var totalSec = gameStartTime ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
+                var mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+                var ss = (totalSec % 60).toString().padStart(2, '0');
+                var timeStr = mm + ' นาที ' + ss + ' วินาที';
+                var heartsLeft = MAX_MISTAKES - mistakes;
+                saveScoreToSupabase(matchedCount, timeStr, heartsLeft, true);
+            }
+        }
+
+        async function saveScoreToSupabase(pairsMatched, timeSpent, heartsLeft, isWin) {
+            var name = sessionStorage.getItem('studentName') || 'ผู้เล่น';
+            var cls = sessionStorage.getItem('studentClass') || '-';
+            var no = sessionStorage.getItem('studentNumber') || '0';
+            var scoreStr = isWin ? ('คู่ ' + pairsMatched + ' คู่ (ผ่านทุก Level)') : ('คู่ ' + pairsMatched + ' คู่ (Game Over)');
+            try {
+                await _supabaseGuard.from('activity_logs').insert([{
+                    name: name,
+                    class: cls,
+                    no: 'No.' + no,
+                    activity: 'mahjong',
+                    score: scoreStr,
+                    time_spent: timeSpent,
+                    hearts: String(heartsLeft)
+                }]);
+            } catch (e) { console.error('Save mahjong score error:', e); }
+        }
+
+        function nextLevelAction() {
+            if (currentLvl < MAX_LEVEL) {
+                startLevel(currentLvl + 1);
+            } else {
+                startLevel(1);
+            }
+        }
+    </script>
+</body>
+
+</html>

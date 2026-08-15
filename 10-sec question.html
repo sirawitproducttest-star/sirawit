@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ช่างเซียน 10 วินาที - ม.1 Challenge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Chakra Petch', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .quiz-card {
+            background: #1e293b;
+            border: 2px solid #38bdf8;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ---------------- หน้ากติกาเริ่มต้น ---------------- */
+        .rules-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 15px;
+        }
+
+        .rules-title {
+            font-size: 1.5rem;
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
+        .rules-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            width: 100%;
+        }
+
+        .rules-box ul {
+            padding-left: 20px;
+        }
+
+        .rules-box li {
+            margin-bottom: 8px;
+        }
+
+        .btn-start-game {
+            background: #22c55e;
+            color: #fff;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+            transition: transform 0.1s;
+        }
+
+        .btn-start-game:active {
+            transform: scale(0.98);
+        }
+
+        /* ---------------- หน้าเล่นเกม ---------------- */
+        .game-area {
+            display: none;
+        }
+
+        /* แถบหัวใจพลังชีวิตด้านบน */
+        .top-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .hearts-container {
+            display: flex;
+            gap: 6px;
+            font-size: 1.4rem;
+        }
+
+        .heart {
+            transition: transform 0.2s, filter 0.2s;
+        }
+
+        .heart.lost {
+            filter: grayscale(100%) brightness(40%);
+            transform: scale(0.9);
+        }
+
+        .timer-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #334155;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background: #38bdf8;
+            transition: width 0.05s linear;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .topic-badge {
+            background: #0284c7;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .q-progress {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .score-box {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #facc15;
+        }
+
+        .scenario-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .scenario-icon {
+            font-size: 3.5rem;
+        }
+
+        .scenario-img {
+            max-width: 100%;
+            max-height: 140px;
+            border-radius: 8px;
+            object-fit: contain;
+            display: none;
+        }
+
+        .scenario-text {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            line-height: 1.4;
+        }
+
+        /* กล่องแจ้งเตือนคำอธิบายเฉลยในตัวเว็บ */
+        .feedback-box-inline {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid #ef4444;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-top: 10px;
+            width: 100%;
+            text-align: left;
+            display: none;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .feedback-title-inline {
+            color: #fca5a5;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .feedback-text-inline {
+            color: #cbd5e1;
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-choice {
+            padding: 16px 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            touch-action: manipulation;
+            transition: transform 0.1s, background-color 0.15s;
+        }
+
+        .btn-choice:active {
+            transform: scale(0.96);
+        }
+
+        .btn-choice:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-safe {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .btn-next-inline {
+            grid-column: span 2;
+            background: #0284c7;
+            color: #fff;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        }
+
+        /* Popup หน้าจบเกม */
+        .result-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 50;
+        }
+
+        .result-title {
+            font-size: 1.6rem;
+            color: #facc15;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .result-desc {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .btn-restart {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .btn-home {
+            background: #ad0e0e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .shake {
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-6px);
+            }
+
+            75% {
+                transform: translateX(6px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quiz-card {
+                padding: 15px;
+            }
+
+            .btn-choice {
+                font-size: 0.95rem;
+                padding: 14px 6px;
+            }
+
+            .scenario-text {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
+        const _supabase10s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+</head>
+
+<body>
+
+    <div class="quiz-card" id="quizCard">
+
+        <!-- 1. หน้าคำชี้แจงกติการวม -->
+        <div class="rules-overlay" id="rulesPage">
+            <div class="rules-title">🛠️ ช่างเซียน 10 วินาที Challenge</div>
+            <div class="rules-box">
+                <strong>กติกาการทดสอบ </strong>
+                <ul>
+                    <li>คำถามมีทั้งหมด <strong>25 ข้อ</strong> </li>
+                    <li>มีเวลาคิดและตัดสินใจข้อละ <strong>10 วินาที</strong></li>
+                    <li>คุณมีพลังชีวิต <strong>3 หัวใจ</strong>❤️ หากตอบผิดหรือหมดเวลาในการตอบ หัวใจจะลดลง</li>
+                    <li>หากหัวใจหมดครบ 3 ดวง จะถือว่า<strong>เกมโอเวอร์</strong> และต้องเริ่มเล่นใหม่</li>
+                </ul>
+            </div>
+            <button class="btn-start-game" onclick="startGame()">🚀 พร้อมแล้ว! เริ่มทำแบบทดสอบ</button>
+        </div>
+
+        <!-- 2. พื้นที่หน้าจอทำแบบทดสอบ -->
+        <div class="game-area" id="gameArea">
+
+            <!-- แถบแสดงหัวใจด้านบน -->
+            <div class="top-status-bar">
+                <div class="hearts-container" id="heartsContainer">
+                    <span class="heart" id="h1">❤️</span>
+                    <span class="heart" id="h2">❤️</span>
+                    <span class="heart" id="h3">❤️</span>
+                </div>
+                <div class="score-box">คะแนน: <span id="scoreText">0</span></div>
+            </div>
+
+            <div class="timer-bar-container">
+                <div class="timer-bar" id="timerBar"></div>
+            </div>
+
+            <div class="header-info">
+                <span class="topic-badge" id="topicBadge">หัวข้อ: วัสดุศาสตร์</span>
+                <span class="q-progress" id="qProgress">ข้อที่ 1 / 20</span>
+            </div>
+
+            <div class="scenario-box">
+                <div class="scenario-icon" id="scenIcon">🧴</div>
+                <img src="" class="scenario-img" id="scenImg" alt="โจทย์รูปภาพ">
+                <div class="scenario-text" id="scenText">โจทย์...</div>
+
+                <!-- กล่องแจ้งเตือนคำอธิบายเฉลยในตัวเว็บ -->
+                <div class="feedback-box-inline" id="feedbackBoxInline">
+                    <div class="feedback-title-inline" id="feedbackTitleInline">❌ ไม่ถูกต้อง!</div>
+                    <div class="feedback-text-inline" id="feedbackTextInline">คำอธิบาย...</div>
+                </div>
+            </div>
+
+            <div class="btn-grid" id="btnGrid">
+                <!-- ปุ่มกดตอบ -->
+            </div>
+        </div>
+
+        <!-- 3. หน้าสรุปผลลัพธ์ (จบเกม / ชนะหรือแพ้) -->
+        <div class="result-overlay" id="resultOverlay">
+            <div class="result-title" id="resTitle">🏆 สรุปผลการทดสอบ</div>
+            <div class="result-desc" id="resDesc">...</div>
+            <button class="btn-restart" onclick="restartQuiz()">🎮 เล่นใหม่อีกครั้ง</button>
+            <button class="btn-home" onclick="backtohome()">🏠 กลับหน้าหลัก</button>
+        </div>
+
+    </div>
+
+    <script>
+        // 🔒 Guard: ต้องทำ Pre-test ก่อนถึงจะเข้าได้
+        (function() {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                alert('⚠️ กรุณา Login ก่อนนะครับ');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (sessionStorage.getItem('pretestDone') !== 'true') {
+                alert('⚠️ กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อนนะครับ');
+                window.location.href = 'home.html';
+                return;
+            }
+        })();
+
+        const QUESTIONS = [
+            // --- พาร์ทที่ 1: วัสดุในชีวิตประจำวัน (10 ข้อ) ---
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🪵",
+                text: "สมบัติของไม้ คือมีความแข็งแรง ทนทาน และเป็นฉนวนไฟฟ้า",
+                type: "tf",
+                isCorrect: true, // ถูกต้อง ไม้ไม่นำไฟฟ้า
+                explain: "ถูกต้อง ไม้เป็นวัสดุฉนวนไฟฟ้าที่ดีมาก จึงมักนำมาทำด้ามจับเครื่องมือ"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🧴",
+                text: "ขวดน้ำพลาสติกใส (PET) มีคุณสมบัติทนความร้อนสูง สามารถใส่น้ำเดือดได้ทันที",
+                type: "tf",
+                isCorrect: false, // ผิด PET ไม่ทนความร้อนสูง
+                explain: "ผิดวิธี พลาสติก PET ทนความร้อนได้ต่ำ จะบิดเบี้ยวหากโดนความร้อนสูง"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🏢",
+                text: "เลือกใช้เหล็กทำโครงสร้างตึก เพราะเหล็กมีคุณสมบัติรับแรงกดและแรงดึงได้สูง",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง เหล็กเป็นโลหะที่มีความแข็งแรงมาก เหมาะกับงานโครงสร้าง"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🥤",
+                text: "พลาสติก มีสมบัติเด่นคือน้ำหนักเบาและนำไฟฟ้าได้ดี",
+                type: "tf",
+                isCorrect: false, // ผิด พลาสติกเป็นฉนวน
+                explain: "ผิด พลาสติกเป็นฉนวนไฟฟ้า (ไม่นำไฟฟ้า) และมีน้ำหนักเบา"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🥉",
+                text: "ใช้อลูมิเนียมในการทำโครงหน้าต่าง เพราะน้ำหนักเบาและไม่เป็นสนิมเหล็ก",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง อลูมิเนียมทนทานต่อการเกิดสนิมและน้ำหนักเบา"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🪟",
+                text: "สมบัติเด่นของแก้วคือ ความใส โปร่งแสง และทนต่อแรงกระแทกได้สูงมาก",
+                type: "tf",
+                isCorrect: false, // ผิด แก้วแตกง่าย (ยกเว้น tempered)
+                explain: "ผิด แก้วทั่วไปมีสมบัติใสและโปร่งแสงจริง แต่แตกง่ายหากโดนกระแทก"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🛞",
+                text: "ยางธรรมชาติ มีความยืดหยุ่นสูงและทนต่อการขูดขีด",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง ยางมีความยืดหยุ่นดีเยี่ยม เหมาะกับงานที่ต้องรับแรงยืด"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🔨",
+                text: "วัสดุกลุ่มโลหะ โดยทั่วไปจะมีคุณสมบัตินำความร้อนและนำไฟฟ้าได้ดี",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง นี่คือสมบัติพื้นฐานของโลหะส่วนใหญ่"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "📦",
+                text: "เลือกใช้กระดาษทำกล่องบรรจุภัณฑ์เพราะ น้ำหนักเบาและทนความชื้นได้ดี",
+                type: "tf",
+                isCorrect: false, // ผิด กระดาษไม่ทนความชื้น
+                explain: "ผิด กระดาษน้ำหนักเบาจริงแต่ **ไม่ทนความชื้น** จะยุ่ยหากเปียกน้ำ"
+            },
+            {
+                topic: "วัสดุในชีวิตประจำวัน",
+                icon: "🪑",
+                text: "ไม้ เป็นวัสดุที่หาได้ง่ายและมีลวดลายสวยงามตามธรรมชาติ",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง ไม้เป็นวัสดุที่นิยมนำมาทำเฟอร์นิเจอร์เพราะความสวยงาม"
+            },
+
+            // --- พาร์ทที่ 2: เครื่องมือช่างพื้นฐาน (10 ข้อ) ---
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "🪛",
+                text: "หากต้องการขันสกรูที่เป็น 'หัวแฉก (+)' ต้องเลือกใช้ไขควงปากแบน",
+                type: "tf",
+                isCorrect: false, // ผิด ต้องใช้ไขควงปากแฉก
+                explain: "ผิดวิธี การใช้ไขควงผิดประเภททำให้ร่องหัวสกรูเสียหาย"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "🔨",
+                text: "เมื่อต้องการถอนตะปูออกจากไม้ ต้องใช้เครื่องมือที่เรียกว่าค้อนหงอน",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง หงอนของค้อนมีไว้สำหรับงัดถอนตะปูโดยเฉพาะ"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "✂️",
+                text: "คีมรวม (หรือคีมปากจระเข้)' เป็นเครื่องมือช่างที่ใช้สำหรับ **ตัดลวดไฟฟ้า** ได้เพียงอย่างเดียว",
+                type: "tf",
+                isCorrect: false, // ผิด คีมรวมใช้จับและคงได้ด้วย
+                explain: "ผิด คีมรวมถูกออกแบบมาให้ใช้จับ ขัน และตัดลวดได้ในตัวเดียว"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "🪚",
+                text: "ต้องการตัดท่อเหล็กให้ขาดออกจากกัน ต้องเลือกใช้เลื่อยลันดา",
+                type: "tf",
+                isCorrect: false, // ผิด เลื่อยลันดาใช้ตัดไม้
+                explain: "ผิดวิธี เลื่อยลันดาใช้สำหรับตัดไม้ ควรใช้เลื่อยตัดเหล็กแทน"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "📏",
+                text: "เมื่อต้องการวัดระยะทางหรือขนาดของวัตถุที่มีความยาวมากๆ ต้องใช้ตลับเมตร",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง ตลับเมตรเป็นเครื่องมือวัดความยาวที่ได้มาตรฐาน"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "📐",
+                text: "เครื่องมือที่ใช้ตรวจสอบมุมฉาก (90 องศา) ของชิ้นงานไม้ เรียกว่าฉากเหล็ก",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง ฉากเหล็กใช้สำหรับวัดมุมฉากและขีดเส้นแนวตัด"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "🪛",
+                text: "ควรใช้ไขควงปากแฉกไปงัดฝากระป๋องแทนการขันสกรู",
+                type: "sd",
+                isCorrect: "dangerous",
+                explain: "อันตราย การใช้เครื่องมือผิดประเภททำให้เครื่องมือเสียหายและเกิดอุบัติเหตุได้"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "🔨",
+                text: "ก่อนออกแรงตอกตะปูด้วยค้อนหงอน ต้องตรวจสอบว่าหัวค้อนและด้ามจับยึดกันแน่นสนิท",
+                type: "sd",
+                isCorrect: "secure",
+                explain: "ถูกต้อง การตรวจสอบเครื่องมือก่อนใช้งานช่วยลดอุบัติเหตุได้"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "✂️",
+                text: "เมื่อต้องการจับยึดชิ้นงานขนาดเล็กให้แน่นสนิท ควรเลือกใช้คีมปากจระเข้",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง คีมปากจระเข้มีร่องฟันช่วยให้จับยึดวัตถุได้แน่น"
+            },
+            {
+                topic: "เครื่องมือช่างพื้นฐาน",
+                icon: "🪚",
+                text: "เลื่อยลันดา มีลักษณะฟันเลื่อยที่ใหญ่และห่าง เหมาะสำหรับงานตัดไม้",
+                type: "tf",
+                isCorrect: true,
+                explain: "ถูกต้อง ลักษณะฟันเลื่อยแบบนี้ช่วยให้ตัดไม้ได้รวดเร็ว"
+            },
+
+            // --- พาร์ทที่ 3: กลไกล้อและเพลา (5 ข้อ) ---
+            {
+                topic: "กลไก (ล้อและเพลา)",
+                icon: "🚪ลูกบิด",
+                image: "10 questions/door_knob.jpg", // เว้นไว้สำหรับครูแปะลิงก์รูปจริง
+                text: "จากรูปลูกบิดประตู ส่วนใดทำหน้าที่เป็นเพลา",
+                type: "wheel_axle",
+                correctAnswer: "axle", // axle = เพลา
+                explain: "ถูกต้อง! แกนตรงกลางขนาดเล็กที่หมุนตามลูกบิด ทำหน้าที่เป็นเพลารับแรงหมุน"
+            },
+            {
+                topic: "กลไก (ล้อและเพลา)",
+                icon: "🚘พวงมาลัย",
+                image: "10 questions/steering_wheel.jpg", // เว้นไว้สำหรับครูแปะลิงก์รูปจริง
+                text: "จากรูปพวงมาลัยรถยนต์ ส่วนใดทำหน้าที่เป็นล้อ",
+                type: "wheel_axle",
+                correctAnswer: "wheel", // wheel = ล้อ
+                explain: "ถูกต้อง! วงพวงมาลัยด้านนอกขนาดใหญ่ทำหน้าที่เป็น 'ล้อ' เพื่อช่วยผ่อนแรงหมุน"
+            },
+            {
+                topic: "กลไก (ล้อและเพลา)",
+                icon: "🪛ไขควง",
+                image: "10 questions/screwdriver.jpg", // เว้นไว้สำหรับครูแปะลิงก์รูปจริง
+                text: "จากรูปไขควง' ส่วนใดทำหน้าที่เป็นล้อ",
+                type: "wheel_axle",
+                correctAnswer: "wheel",
+                explain: "ถูกต้อง! ด้ามจับขนาดใหญ่ทำหน้าที่เป็น 'ล้อ' ช่วยให้เราออกแรงหมุนขันสกรูได้ง่ายขึ้น"
+            },
+            {
+                topic: "กลไก (ล้อและเพลา)",
+                icon: "✏️",
+                image: "10 questions/sharpener.jpg", // เว้นไว้สำหรับครูแปะลิงก์รูปจริง
+                text: "จากรูปกบเหลาดินสอแบบหมุน ส่วนใดทำหน้าที่เป็นเพลา",
+                type: "wheel_axle",
+                correctAnswer: "axle",
+                explain: "ถูกต้อง! แกนเหล็กตรงกลางเป็น 'เพลา' ที่รับแรงหมุนจากด้ามจับด้านนอก"
+            },
+            {
+                topic: "กลไก (ล้อและเพลา)",
+                icon: "⚙️",
+                image: "10 questions/windlass.jpg", // เว้นไว้สำหรับครูแปะลิงก์รูปจริง
+                text: "จากรูปกว้านตักน้ำ ส่วนใดทำหน้าที่เป็นล้อ",
+                type: "wheel_axle",
+                correctAnswer: "wheel",
+                explain: "ถูกต้อง! วงล้อขนาดใหญ่ทำหน้าที่เป็น 'ล้อ' ช่วยทดแรงในการยกถังน้ำหนักๆ"
+            }
+        ];
+        let currentIndex = 0;
+        let score = 0;
+        let lives = 3; // พลังชีวิต 3 หัวใจ
+        let timeLeft = 10.0;
+        let timerInterval = null;
+        const TIME_LIMIT = 10.0;
+        let gameStartTime = 0; // บันทึกเวลาเริ่มต้น
+
+        function startGame() {
+            document.getElementById('rulesPage').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            currentIndex = 0;
+            score = 0;
+            lives = 3; // รีเซ็ตหัวใจเป็น 3 ดวงเต็ม
+            gameStartTime = Date.now(); // เริ่มนับเวลา
+            updateHeartsUI();
+            document.getElementById('scoreText').textContent = score;
+            startQuestion();
+        }
+
+        // อัปเดตการแสดงผลหัวใจ (ดวงไหนหมดให้กลายเป็นสีมืดลง)
+        function updateHeartsUI() {
+            for (let i = 1; i <= 3; i++) {
+                const heartEl = document.getElementById(`h${i}`);
+                if (i <= lives) {
+                    heartEl.classList.remove('lost');
+                } else {
+                    heartEl.classList.add('lost');
+                }
+            }
+        }
+
+        function startQuestion() {
+            if (currentIndex >= QUESTIONS.length) {
+                showResult(true); // จบเกมแบบเคลียร์ครบทุกข้อ
+                return;
+            }
+
+            document.getElementById('feedbackBoxInline').style.display = 'none';
+
+            const q = QUESTIONS[currentIndex];
+            document.getElementById('topicBadge').textContent = `หัวข้อ: ${q.topic}`;
+            document.getElementById('qProgress').textContent = `ข้อที่ ${currentIndex + 1} / ${QUESTIONS.length}`;
+
+            const scenIcon = document.getElementById('scenIcon');
+            const scenImg = document.getElementById('scenImg');
+
+            if (q.image && q.image.trim() !== "") {
+                scenIcon.style.display = 'none';
+                scenImg.style.display = 'block';
+                scenImg.src = q.image;
+            } else {
+                scenImg.style.display = 'none';
+                scenIcon.style.display = 'block';
+                scenIcon.textContent = q.icon;
+            }
+
+            document.getElementById('scenText').textContent = q.text;
+
+            const btnGrid = document.getElementById('btnGrid');
+            btnGrid.innerHTML = '';
+
+            if (q.type === 'tf') {
+                btnGrid.innerHTML = `
+                    <button class="btn-choice btn-safe" onclick="answer(true)">✅ ถูกวิธี </button>
+                    <button class="btn-choice btn-danger" onclick="answer(false)">❌ ผิดวิธี </button>
+                `;
+            } else if (q.type === 'wheel_axle') {
+                btnGrid.innerHTML = `
+                    <button class="btn-choice btn-safe" style="background:#0284c7;" onclick="answer('wheel')">⚙️ 1</button>
+                    <button class="btn-choice btn-danger" style="background:#8b5cf6;" onclick="answer('axle')">🥢 2</button>
+                `;
+            } else if (q.type === 'sd') {
+                btnGrid.innerHTML = `
+                    <button class="btn-choice btn-safe" onclick="answer('secure')">🛡️ ปลอดภัย</button>
+                    <button class="btn-choice btn-danger" onclick="answer('dangerous')">⚠️ อันตราย</button>
+                `;
+            }
+
+            // รีเซ็ตไทม์เมอร์ 10 วินาที
+            timeLeft = TIME_LIMIT;
+            document.getElementById('timerBar').style.width = '100%';
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.05;
+                const percent = (timeLeft / TIME_LIMIT) * 100;
+                document.getElementById('timerBar').style.width = `${Math.max(0, percent)}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 50);
+        }
+
+        function answer(userChoice) {
+            clearInterval(timerInterval);
+            const q = QUESTIONS[currentIndex];
+
+            let isCorrect = false;
+            if (q.type === 'tf') {
+                isCorrect = (userChoice === q.isCorrect);
+            } else if (q.type === 'wheel_axle') {
+                isCorrect = (userChoice === q.correctAnswer);
+            } else if (q.type === 'sd') {
+                isCorrect = (userChoice === q.isCorrect);
+            }
+
+            if (isCorrect) {
+                score += 1;
+                document.getElementById('scoreText').textContent = score;
+                currentIndex++;
+                startQuestion();
+            } else {
+                triggerShake();
+                loseLifeAndShowFeedback("❌ ไม่ถูกต้อง!", q.explain, "#ef4444");
+            }
+        }
+
+        function handleTimeOut() {
+            triggerShake();
+            const q = QUESTIONS[currentIndex];
+            loseLifeAndShowFeedback("⏰ หมดเวลา 10 วินาที!", `ข้อนี้ตอบไม่ทันนะ! คำอธิบาย: ${q.explain}`, "#f97316");
+        }
+
+        // ฟังก์ชันหักหัวใจ และแสดงกล่องเฉลยในหน้าเว็บ
+        function loseLifeAndShowFeedback(titleText, explainText, themeColor) {
+            lives--; // หักหัวใจ 1 ดวง
+            updateHeartsUI();
+
+            if (lives <= 0) {
+                // ถ้าหัวใจหมดเกลี้ยง ให้แสดงหน้าจอ Game Over ทันที
+                setTimeout(() => {
+                    showResult(false);
+                }, 1200); // ดีเลย์แป๊บเดียวให้เด็กเห็นหัวใจดวงสุดท้ายดับลง
+                return;
+            }
+
+            const fbBox = document.getElementById('feedbackBoxInline');
+            const fbTitle = document.getElementById('feedbackTitleInline');
+            const fbText = document.getElementById('feedbackTextInline');
+
+            fbBox.style.borderColor = themeColor;
+            fbBox.style.background = `${themeColor}22`;
+            fbTitle.style.color = themeColor;
+            fbText.textContent = explainText;
+
+            fbBox.style.display = 'block';
+
+            const btnGrid = document.getElementById('btnGrid');
+            btnGrid.innerHTML = `
+                <button class="btn-next-inline" onclick="nextQuestionAfterFeedback()">➔ ไปทำข้อถัดไป</button>
+            `;
+            document.querySelector('.btn-next-inline').style.display = 'block';
+        }
+
+        function nextQuestionAfterFeedback() {
+            currentIndex++;
+            startQuestion();
+        }
+
+        function triggerShake() {
+            const card = document.getElementById('quizCard');
+            card.classList.add('shake');
+            setTimeout(() => card.classList.remove('shake'), 300);
+        }
+
+        function showResult(isWin) {
+            clearInterval(timerInterval);
+            const overlay = document.getElementById('resultOverlay');
+            const title = document.getElementById('resTitle');
+            const desc = document.getElementById('resDesc');
+
+            if (!isWin) {
+                // กรณีหัวใจหมด (Game Over)
+                title.textContent = "💥 เกมโอเวอร์";
+                title.style.color = "#ef4444";
+                desc.innerHTML = `
+                    คุณตอบผิดพลาดสะสมครบ 3 ครั้ง <br><br>
+                    <strong>คะแนนที่ทำได้ก่อนตกรอบ:</strong> ${score} / ${QUESTIONS.length} คะแนน<br>
+                    สติมาปัญญาเกิด สติเตลิดปัญญาหาย!
+                `;
+            } else {
+                // กรณีเคลียร์ครบ 25 ข้อสำเร็จ
+                const percent = (score / QUESTIONS.length) * 100;
+                let grade = "A (ช่างเซียนระดับยอดเยี่ยม)";
+                if (percent < 60) grade = "F (ต้องทบทวนความปลอดภัยงานช่างเพิ่มเติม)";
+                else if (percent < 75) grade = "C (ช่างระดับพื้นฐาน)";
+                else if (percent < 90) grade = "B (ช่างฝีมือดี)";
+
+                title.textContent = `🏆 ยินดีด้วย! เคลียร์ภารกิจสำเร็จ`;
+                title.style.color = "#facc15";
+                desc.innerHTML = `
+                    คะแนนรวมของคุณ: <strong style="color:#38bdf8; font-size:1.1rem;">${score} / ${QUESTIONS.length} คะแนน</strong><br>
+                    เกรดประเมิน: <strong>${grade}</strong><br><br>
+                    เหลือพลังชีวิตรอดอยู่ ${lives} หัวใจ ❤️<br>
+                    ระบบบันทึกคะแนนเข้าสู่ระบบเรียบร้อยแล้ว!
+                `;
+            }
+
+            // ✅ Mark quiz10sDone เมื่อเกมจบ (ทั้งชนะและแพ้)
+            sessionStorage.setItem('quiz10sDone', 'true');
+
+            // บันทึกคะแนนลง Supabase
+            saveQuizScore(score, lives, isWin);
+
+            overlay.style.display = 'flex';
+        }
+
+        // ==================== บันทึกคะแนนลง Supabase ====================
+        async function saveQuizScore(finalScore, heartsLeft, isWin) {
+            try {
+                var name = sessionStorage.getItem('studentName') || 'ผู้เรียน';
+                var cls = sessionStorage.getItem('studentClass') || '-';
+                var no = sessionStorage.getItem('studentNumber') || '0';
+                var totalSec = Math.floor((Date.now() - gameStartTime) / 1000);
+                var mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+                var ss = (totalSec % 60).toString().padStart(2, '0');
+                var timeStr = mm + ' min ' + ss + ' sec';
+
+                await _supabase10s.from('activity_logs').insert([{
+                    name: name,
+                    class: cls,
+                    no: 'No.' + no,
+                    activity: 'quiz10s',
+                    score: finalScore + ' / ' + QUESTIONS.length,
+                    time_spent: timeStr,
+                    hearts: heartsLeft + ' / 3'
+                }]);
+                console.log('Quiz10s score saved!');
+            } catch (e) { console.error('Save quiz10s error:', e); }
+        }
+
+        function restartQuiz() {
+            document.getElementById('resultOverlay').style.display = 'none';
+            document.getElementById('rulesPage').style.display = 'flex';
+            document.getElementById('gameArea').style.display = 'none';
+        }
+
+        function backtohome() {
+            window.location.href = "home.html";
+        }
+    </script>
+</body>
+
+</html>
