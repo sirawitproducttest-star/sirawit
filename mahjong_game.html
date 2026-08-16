@@ -10,14 +10,27 @@
         const _supabaseGuard = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function checkPretestGuard() {
-            // ถ้ามี cache ใน session → ผ่านได้เลย (ไม่ต้องรอ DB)
-            if (sessionStorage.getItem('pretestDone') === 'true' &&
-                sessionStorage.getItem('quiz10sDone') === 'true' &&
-                sessionStorage.getItem('sandboxDone') === 'true') return;
-
             var name = sessionStorage.getItem('studentName');
             var cls = sessionStorage.getItem('studentClass');
             var no = sessionStorage.getItem('studentNumber');
+
+            // ✅ Restore sandboxDone จาก sandbox_logs (แยก table) ถ้ายังไม่มีใน session
+            if (sessionStorage.getItem('sandboxDone') !== 'true' && name) {
+                try {
+                    var sbRes = await _supabaseGuard.from('sandbox_logs')
+                        .select('id')
+                        .eq('name', name).eq('class', cls).eq('no', no)
+                        .limit(1);
+                    if (sbRes.data && sbRes.data.length > 0) {
+                        sessionStorage.setItem('sandboxDone', 'true');
+                    }
+                } catch(e) { console.warn('mahjong: sandboxDone restore error:', e); }
+            }
+
+            // ถ้ามี cache ใน session ครบ → ผ่านได้เลย (ไม่ต้องรอ DB)
+            if (sessionStorage.getItem('pretestDone') === 'true' &&
+                sessionStorage.getItem('quiz10sDone') === 'true' &&
+                sessionStorage.getItem('sandboxDone') === 'true') return;
 
             if (!name) {
                 alert('⚠️ กรุณา Login ก่อนนะครับ');
@@ -358,7 +371,28 @@
             document.getElementById('mistakesInfo').textContent = hearts;
         }
 
+        // ================= 💾 Progress Save/Load per Account =================
+        function getSaveKey() {
+            var name = sessionStorage.getItem('studentName') || 'guest';
+            var cls  = sessionStorage.getItem('studentClass') || '-';
+            var no   = sessionStorage.getItem('studentNumber') || '0';
+            return 'mahjong_lvl_' + cls + '_' + no + '_' + name;
+        }
+        function saveLevelProgress(lvl) {
+            localStorage.setItem(getSaveKey(), String(lvl));
+        }
+        function loadLevelProgress() {
+            var saved = localStorage.getItem(getSaveKey());
+            return saved ? parseInt(saved, 10) : null;
+        }
+        function clearLevelProgress() {
+            localStorage.removeItem(getSaveKey());
+        }
+        // ===================================================================
+
         function goHome() {
+            // 💾 บันทึก Level ปัจจุบันก่อนออก เพื่อ resume ได้ครั้งหน้า
+            saveLevelProgress(currentLvl);
             window.location.href = 'home.html';
         }
 
@@ -380,6 +414,9 @@
             matchedCount = 0;
             selectedTile1 = null;
             selectedTile2 = null;
+
+            // 💾 บันทึก progress ว่ากำลังอยู่ Level อะไร
+            saveLevelProgress(lvl);
 
             const data = DATABASE[`lvl${lvl}`];
             totalPairs = data.length;
@@ -634,13 +671,14 @@
 
         function showLoseOverlay() {
             document.getElementById('loseOverlay').style.display = 'flex';
-            // ❤️ บันทึกคะแนนตอนเช็ด (Game Over)
+            // 💔 บันทึกคะแนนตอน Game Over
             var totalSec = gameStartTime ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
             var mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
             var ss = (totalSec % 60).toString().padStart(2, '0');
             var timeStr = mm + ' นาที ' + ss + ' วินาที';
-            var heartsLeft = MAX_MISTAKES - mistakes;
-            saveScoreToSupabase(matchedCount, timeStr, heartsLeft, false);
+            saveScoreToSupabase(matchedCount, currentLvl, timeStr, false);
+            // 🗑️ Game Over = ต้องเริ่มใหม่จาก Level 1 จึงลบ progress ที่ค้างไว้ทิ้ง
+            clearLevelProgress();
         }
 
         function showWinOverlay() {
@@ -662,25 +700,32 @@
             }
 
             overlay.style.display = 'flex';
-            // ✅ Mark mahjongDone ทุกครั้งที่เกมจบ (ทั้งผ่านครบทุก Level หรือแค่ผ่าน Level ใด Level หนึ่ง)
+            // ✅ Mark mahjongDone และบันทึกคะแนน Level ล่าสุดที่ผ่านทุกครั้ง
             sessionStorage.setItem('mahjongDone', 'true');
-            // 🏆 บันทึกคะแนนตอนจบ Level สุดท้าย (Level 4)
-            if (currentLvl >= MAX_LEVEL) {
-                var totalSec = gameStartTime ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
-                var mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
-                var ss = (totalSec % 60).toString().padStart(2, '0');
-                var timeStr = mm + ' นาที ' + ss + ' วินาที';
-                var heartsLeft = MAX_MISTAKES - mistakes;
-                saveScoreToSupabase(matchedCount, timeStr, heartsLeft, true);
-            }
+            var totalSec = gameStartTime ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
+            var mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+            var ss = (totalSec % 60).toString().padStart(2, '0');
+            var timeStr = mm + ' นาที ' + ss + ' วินาที';
+            var isAllClear = (currentLvl >= MAX_LEVEL);
+            saveScoreToSupabase(matchedCount, currentLvl, timeStr, isAllClear);
+            // 🗑️ ผ่านเกมเรียบร้อย = ลบ progress ที่ค้างไว้
+            if (isAllClear) clearLevelProgress();
         }
 
-        async function saveScoreToSupabase(pairsMatched, timeSpent, heartsLeft, isWin) {
+        async function saveScoreToSupabase(pairsMatched, levelReached, timeSpent, isWin) {
             var name = sessionStorage.getItem('studentName') || 'ผู้เล่น';
             var cls = sessionStorage.getItem('studentClass') || '-';
             var no = sessionStorage.getItem('studentNumber') || '0';
-            var scoreStr = isWin ? ('คู่ ' + pairsMatched + ' คู่ (ผ่านทุก Level)') : ('คู่ ' + pairsMatched + ' คู่ (Game Over)');
+            // ระบุ Level ที่ถึงในคะแนนด้วย เช่น "Level 2 — คู่ 8 คู่ (Game Over)"
+            var lvlLabel = isWin ? 'Level 1-4 (ผ่านทุก Level!)' : 'Level ' + levelReached;
+            var scoreStr = lvlLabel + ' — จับคู่ได้ ' + pairsMatched + ' คู่';
             try {
+                // 🗑️ ลบ record เก่าของนักเรียนคนนี้ก่อน เพื่อให้มีแค่ 1 row ต่อนักเรียนเสมอ
+                await _supabaseGuard.from('activity_logs')
+                    .delete()
+                    .eq('name', name).eq('class', cls).eq('no', 'No.' + no).eq('activity', 'mahjong');
+
+                // ✅ บันทึกผลล่าสุด
                 await _supabaseGuard.from('activity_logs').insert([{
                     name: name,
                     class: cls,
@@ -688,8 +733,9 @@
                     activity: 'mahjong',
                     score: scoreStr,
                     time_spent: timeSpent,
-                    hearts: String(heartsLeft)
+                    hearts: '-'
                 }]);
+                console.log('Mahjong score saved! level=' + levelReached + ' pairs=' + pairsMatched);
             } catch (e) { console.error('Save mahjong score error:', e); }
         }
 
@@ -697,8 +743,51 @@
             if (currentLvl < MAX_LEVEL) {
                 startLevel(currentLvl + 1);
             } else {
+                // เล่นใหม่ = เริ่มจาก Level 1 ใหม่
                 startLevel(1);
             }
+        }
+
+        // ================= 🚀 Auto-Resume on Page Load =================
+        window.onload = function () {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = 'login.html';
+                return;
+            }
+            var savedLvl = loadLevelProgress();
+            if (savedLvl && savedLvl >= 1 && savedLvl <= MAX_LEVEL) {
+                // ✅ พบ progress ที่ค้างไว้ → ซ่อนแบบรอ resume เหนือ start overlay
+                var overlay = document.getElementById('startOverlay');
+                var resumeBox = document.createElement('div');
+                resumeBox.id = 'resumeBox';
+                resumeBox.style.cssText = 'margin-top:16px; background:#1e293b; border:2px solid #facc15; border-radius:12px; padding:18px 24px; text-align:center;';
+                resumeBox.innerHTML = `
+                    <div style="color:#facc15; font-size:1.05rem; margin-bottom:12px;">⚡ คุณเล่นค้างไว้ที่ <strong>Level ${savedLvl}</strong></div>
+                    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                        <button class="btn-action" style="background:#facc15; color:#0f172a; font-weight:700;"
+                            onclick="resumeFromLevel(${savedLvl})">▶ เล่นต่อจาก Level ${savedLvl}</button>
+                        <button class="btn-action" style="background:#64748b;"
+                            onclick="freshStart()">🔄 เริ่มใหม่จาก Level 1</button>
+                    </div>`;
+                overlay.appendChild(resumeBox);
+            }
+            // ถ้าไม่มี progress ค้างไว้ → แสดง start overlay ตามปกติ
+        };
+
+        function resumeFromLevel(lvl) {
+            // Resume: ต้อง init timer และ mistakes ด้วย (restoring session state is limited — treat as fresh run from that level)
+            mistakes = 0;
+            updateMistakesUI();
+            gameStartTime = Date.now();
+            startLevel(lvl);
+        }
+
+        function freshStart() {
+            clearLevelProgress();
+            // ลบ resume box ออก
+            var box = document.getElementById('resumeBox');
+            if (box) box.remove();
+            startLevel(1);
         }
     </script>
 </body>

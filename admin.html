@@ -382,8 +382,64 @@
             padding: 30px;
             font-style: italic;
         }
+
+        .btn-excel {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+        .btn-excel:hover { background: #15803d; }
+
+        .excel-drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #f8fafc;
+            color: #64748b;
+        }
+        .excel-drop-zone:hover, .excel-drop-zone.dragover {
+            border-color: #0284c7;
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .excel-drop-zone .drop-icon { font-size: 2rem; margin-bottom: 8px; }
+        .excel-drop-zone .drop-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 6px; }
+
+        .preview-table-wrap {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+        .preview-table-wrap table { font-size: 0.82rem; }
+        .preview-table-wrap th { position: sticky; top: 0; background: #f1f5f9; }
+        .import-summary {
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: #0369a1;
+            margin-top: 10px;
+        }
+        .import-error { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+        .modal-content.wide { width: min(700px, 95vw); }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
@@ -412,7 +468,7 @@
             <div class="stat-card">
                 <h3>คะแนนเฉลี่ยรวม</h3>
                 <div class="value" id="statAvgScore">- / 10</div>
-                <div class="sub-text">รอการประมวลผล</div>
+                <div class="sub-text" id="statAvgScoreSub">รอการประมวลผล</div>
             </div>
             <div class="stat-card">
                 <h3>การเข้าทำกิจกรรมรวม</h3>
@@ -432,7 +488,10 @@
             <div class="action-bar">
                 <input type="text" class="search-box" id="studentSearch" placeholder="ค้นหาชื่อ, ชั้น หรือเลขที่..."
                     onkeyup="filterStudents()">
-                <button class="btn-primary" onclick="openModal('addStudentModal')">+ เพิ่มนักเรียนใหม่</button>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-excel" onclick="openModal('importExcelModal')">📊 นำเข้า Excel</button>
+                    <button class="btn-primary" onclick="openModal('addStudentModal')">+ เพิ่มนักเรียนใหม่</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table>
@@ -582,6 +641,51 @@
         </div>
     </div>
 
+    <!-- Modal: Import Excel -->
+    <div class="modal" id="importExcelModal">
+        <div class="modal-content wide">
+            <h3>📊 นำเข้ารายชื่อนักเรียนจาก Excel</h3>
+            <p style="font-size:0.82rem; color:#64748b; margin-bottom:12px;">
+                ไฟล์ Excel ต้องมีคอลัมน์: <strong>name</strong> (ชื่อ-สกุล), <strong>class</strong> (ชั้น เช่น ม.1/1), <strong>no</strong> (เลขที่ เช่น 01)
+            </p>
+
+            <!-- Drop Zone -->
+            <div class="excel-drop-zone" id="excelDropZone"
+                onclick="document.getElementById('excelFileInput').click()"
+                ondragover="event.preventDefault(); this.classList.add('dragover')"
+                ondragleave="this.classList.remove('dragover')"
+                ondrop="handleExcelDrop(event)">
+                <div class="drop-icon">📂</div>
+                <div>คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่</div>
+                <div class="drop-hint">รองรับ .xlsx, .xls, .csv</div>
+            </div>
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelFile(this.files[0])">
+
+            <!-- Preview -->
+            <div id="excelPreviewArea" style="display:none;">
+                <div class="import-summary" id="importSummary"></div>
+                <div class="preview-table-wrap">
+                    <table id="excelPreviewTable">
+                        <thead><tr><th>ชื่อ-สกุล</th><th>ชั้น</th><th>เลขที่</th><th>สถานะ</th></tr></thead>
+                        <tbody id="excelPreviewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ดาวน์โหลด Template -->
+            <div style="margin-top:12px; font-size:0.8rem; color:#64748b;">
+                💡 ยังไม่มีไฟล์? 
+                <a href="#" onclick="downloadTemplate(); return false;" style="color:#0284c7; font-weight:600;">ดาวน์โหลด Template Excel</a>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('importExcelModal'); resetExcelImport()">ยกเลิก</button>
+                <button class="btn-primary" id="btnConfirmImport" onclick="confirmImport()" disabled
+                    style="opacity:0.5;">✅ นำเข้าข้อมูล (<span id="importCount">0</span> คน)</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let allLogs = []; // cache ข้อมูล log ทั้งหมดไว้ใน memory
 
@@ -696,6 +800,131 @@
             });
         }
 
+        // ==================== Excel Import ====================
+        let excelValidRows = [];
+
+        function handleExcelDrop(event) {
+            event.preventDefault();
+            document.getElementById('excelDropZone').classList.remove('dragover');
+            var file = event.dataTransfer.files[0];
+            if (file) handleExcelFile(file);
+        }
+
+        function handleExcelFile(file) {
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var data = new Uint8Array(e.target.result);
+                var workbook = XLSX.read(data, { type: 'array' });
+                var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                var rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+                previewExcelRows(rows, file.name);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function previewExcelRows(rows, fileName) {
+            var valid = [], invalid = [];
+            var validClasses = ['ม.1/1','ม.1/2','ม.1/3','ม.1/4','ม.1/5','ม.1/6'];
+
+            rows.forEach(function (r) {
+                var name = (r['name'] || r['ชื่อ'] || r['ชื่อ-สกุล'] || '').toString().trim();
+                var cls  = (r['class'] || r['ชั้น'] || '').toString().trim();
+                var no   = (r['no'] || r['เลขที่'] || '').toString().trim();
+                // pad เลขที่เป็น 2 หลักอัตโนมัติ
+                if (no && !isNaN(Number(no))) no = String(Number(no)).padStart(2, '0');
+
+                var ok = name && validClasses.includes(cls) && no;
+                var obj = { name, class: cls, no, ok, reason: '' };
+                if (!name) obj.reason = 'ไม่มีชื่อ';
+                else if (!validClasses.includes(cls)) obj.reason = 'ชั้นไม่ถูกต้อง (' + cls + ')';
+                else if (!no) obj.reason = 'ไม่มีเลขที่';
+                (ok ? valid : invalid).push(obj);
+            });
+
+            excelValidRows = valid;
+            var total = valid.length + invalid.length;
+
+            // แสดง summary
+            var sumEl = document.getElementById('importSummary');
+            var hasErr = invalid.length > 0;
+            sumEl.className = 'import-summary' + (hasErr ? ' import-error' : '');
+            sumEl.innerHTML =
+                '📁 <strong>' + fileName + '</strong> — พบทั้งหมด ' + total + ' แถว<br>' +
+                '✅ นำเข้าได้: <strong>' + valid.length + ' คน</strong>' +
+                (hasErr ? ' &nbsp;|&nbsp; ⚠️ มีปัญหา: <strong>' + invalid.length + ' แถว</strong> (ข้ามแถวเหล่านี้)' : '');
+
+            // แสดง preview
+            var tbody = document.getElementById('excelPreviewBody');
+            tbody.innerHTML = '';
+            valid.concat(invalid).forEach(function (r) {
+                var tr = document.createElement('tr');
+                var statusHtml = r.ok
+                    ? '<span style="color:#15803d; font-weight:600;">✅ ได้</span>'
+                    : '<span style="color:#b91c1c; font-weight:600;">❌ ' + r.reason + '</span>';
+                tr.innerHTML = '<td>' + (r.name || '-') + '</td><td>' + (r.class || '-') + '</td><td>' + (r.no || '-') + '</td><td>' + statusHtml + '</td>';
+                if (!r.ok) tr.style.background = '#fff5f5';
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('excelPreviewArea').style.display = 'block';
+            document.getElementById('importCount').textContent = valid.length;
+            var btn = document.getElementById('btnConfirmImport');
+            btn.disabled = valid.length === 0;
+            btn.style.opacity = valid.length === 0 ? '0.5' : '1';
+        }
+
+        async function confirmImport() {
+            if (excelValidRows.length === 0) return;
+            var btn = document.getElementById('btnConfirmImport');
+            btn.disabled = true;
+            btn.textContent = '⏳ กำลังนำเข้า...';
+
+            var payload = excelValidRows.map(function (r) {
+                return { name: r.name, class: r.class, no: r.no, role: 'student', is_blocked: false };
+            });
+
+            // insert แบบ batch (upsert เพื่อป้องกัน duplicate)
+            var { error } = await _supabase.from('students').insert(payload);
+            if (error) {
+                alert('❌ เกิดข้อผิดพลาดในการนำเข้า:\n' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '✅ นำเข้าข้อมูล (<span id="importCount">' + excelValidRows.length + '</span> คน)';
+                return;
+            }
+
+            alert('✅ นำเข้าสำเร็จ ' + excelValidRows.length + ' คน!');
+            closeModal('importExcelModal');
+            resetExcelImport();
+            await loadStudentsFromSupabase();
+        }
+
+        function resetExcelImport() {
+            excelValidRows = [];
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('excelPreviewArea').style.display = 'none';
+            document.getElementById('importSummary').innerHTML = '';
+            document.getElementById('excelPreviewBody').innerHTML = '';
+            document.getElementById('importCount').textContent = '0';
+            var btn = document.getElementById('btnConfirmImport');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.innerHTML = '✅ นำเข้าข้อมูล (<span id="importCount">0</span> คน)';
+        }
+
+        function downloadTemplate() {
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet([
+                ['name', 'class', 'no'],
+                ['ด.ช. ตัวอย่าง ชัดเจน', 'ม.1/1', '01'],
+                ['ด.ญ. ตัวอย่าง ดีเยี่ยม', 'ม.1/1', '02'],
+                ['ด.ช. ตัวอย่าง เก่งมาก', 'ม.1/2', '01'],
+            ]);
+            XLSX.utils.book_append_sheet(wb, ws, 'Students');
+            XLSX.writeFile(wb, 'student_template.xlsx');
+        }
+        // =====================================================
+
         // ==================== ผู้ดูแล ====================
 
         async function addAdmin() {
@@ -786,9 +1015,9 @@
             if (sel === 'pretest' || sel === 'posttest') {
                 thead.innerHTML = '<tr><th>เวลาทำรายการ</th><th>ชื่อ - นามสกุล</th><th>ชั้น / เลขที่</th><th>คะแนนสอบ</th><th>เวลาที่ใช้ทำสอบ</th></tr>';
             } else if (sel === 'quiz10s' || sel === 'mahjong') {
-                thead.innerHTML = '<tr><th>เวลาทำรายการ</th><th>ชื่อ - นามสกุล</th><th>ชั้น / เลขที่</th><th>คะแนนที่ได้</th><th>เวลาที่ใช้</th><th>หัวใจที่เหลือ</th></tr>';
+                thead.innerHTML = '<tr><th>เวลาทำรายการ</th><th>ชื่อ - นามสกุล</th><th>ชั้น / เลขที่</th><th>คะแนนที่ได้</th><th>เวลาที่ใช้</th></tr>';
             } else {
-                thead.innerHTML = '<tr><th>เวลาทำรายการ</th><th>ชื่อ - นามสกุล</th><th>ชั้น / เลขที่</th><th>กิจกรรม</th><th>คะแนน</th><th>เวลาที่ใช้</th><th>หัวใจที่เหลือ</th></tr>';
+                thead.innerHTML = '<tr><th>เวลาทำรายการ</th><th>ชื่อ - นามสกุล</th><th>ชั้น / เลขที่</th><th>กิจกรรม</th><th>คะแนน</th><th>เวลาที่ใช้</th></tr>';
             }
 
             // render ข้อมูลที่กรองแล้ว (ถ้ามีข้อมูลใน cache)
@@ -832,16 +1061,14 @@
                         + '<td>' + (log.name || '-') + '</td>'
                         + '<td>' + (log.class || '-') + ' / ' + (log.no || '-') + '</td>'
                         + '<td>' + (log.score != null ? log.score : '-') + '</td>'
-                        + '<td>' + (log.time_spent != null ? log.time_spent : '-') + '</td>'
-                        + '<td>' + (log.hearts != null ? log.hearts : '-') + '</td>';
+                        + '<td>' + (log.time_spent != null ? log.time_spent : '-') + '</td>';
                 } else {
                     row.innerHTML = '<td>' + new Date(log.created_at).toLocaleString('th-TH') + '</td>'
                         + '<td>' + (log.name || '-') + '</td>'
                         + '<td>' + (log.class || '-') + ' / ' + (log.no || '-') + '</td>'
                         + '<td>' + (log.activity || '-') + '</td>'
                         + '<td>' + (log.score != null ? log.score : '-') + '</td>'
-                        + '<td>' + (log.time_spent != null ? log.time_spent : '-') + '</td>'
-                        + '<td>' + (log.hearts != null ? log.hearts : '-') + '</td>';
+                        + '<td>' + (log.time_spent != null ? log.time_spent : '-') + '</td>';
                 }
                 tbody.appendChild(row);
             });
@@ -861,7 +1088,17 @@
                 return matchActivity && matchClass && matchSearch;
             });
 
-            var csv = 'เวลา,ชื่อ-สกุล,ชั้น,เลขที่,กิจกรรม,คะแนน,เวลาที่ใช้,หัวใจ\n';
+            // เรียงตามเลขที่ (ตัวเลข) → ชั้น → กิจกรรม ก่อนส่งออก
+            filtered.sort(function(a, b) {
+                var noA = parseInt((a.no || '').replace(/\D/g, '')) || 0;
+                var noB = parseInt((b.no || '').replace(/\D/g, '')) || 0;
+                if (noA !== noB) return noA - noB;
+                if ((a.class || '') < (b.class || '')) return -1;
+                if ((a.class || '') > (b.class || '')) return 1;
+                return (a.activity || '').localeCompare(b.activity || '');
+            });
+
+            var csv = 'เวลา,ชื่อ-สกุล,ชั้น,เลขที่,กิจกรรม,คะแนน,เวลาที่ใช้\n';
             filtered.forEach(function (log) {
                 var row = [
                     new Date(log.created_at).toLocaleString('th-TH'),
@@ -870,8 +1107,7 @@
                     log.no || '-',
                     log.activity || '-',
                     log.score != null ? log.score : '-',
-                    log.time_spent != null ? log.time_spent : '-',
-                    log.hearts != null ? log.hearts : '-'
+                    log.time_spent != null ? log.time_spent : '-'
                 ].map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
                 csv += row + '\n';
             });
@@ -884,10 +1120,41 @@
         }
 
         async function loadLogsFromSupabase() {
-            var res = await _supabase.from('activity_logs').select('*').order('created_at', { ascending: false });
+            // sandbox อยู่ใน sandbox_logs แยกต่างหาก → ดึง activity_logs ได้ตรงๆ ไม่ต้องกรอง
+            var res = await _supabase.from('activity_logs').select('*')
+                .order('created_at', { ascending: false });
             if (res.data && res.data.length > 0) {
                 allLogs = res.data; // เก็บไว้ใน cache
                 document.getElementById('statTotalLogs').textContent = allLogs.length + ' ครั้ง';
+
+                // คำนวณคะแนนเฉลี่ยจาก pretest + posttest
+                var scoreLogs = allLogs.filter(function (log) {
+                    return (log.activity === 'pretest' || log.activity === 'posttest') &&
+                        log.score && log.score.indexOf('/') !== -1;
+                });
+                if (scoreLogs.length > 0) {
+                    var totalScore = 0;
+                    var totalMax = 0;
+                    scoreLogs.forEach(function (log) {
+                        var parts = log.score.split('/');
+                        var got = parseFloat(parts[0].trim());
+                        var max = parseFloat(parts[1].trim());
+                        if (!isNaN(got) && !isNaN(max) && max > 0) {
+                            totalScore += got;
+                            totalMax += max;
+                        }
+                    });
+                    if (totalMax > 0) {
+                        var avg = (totalScore / scoreLogs.length).toFixed(1);
+                        var maxPerTest = (totalMax / scoreLogs.length).toFixed(0);
+                        document.getElementById('statAvgScore').textContent = avg + ' / ' + maxPerTest;
+                        document.getElementById('statAvgScoreSub').textContent = 'จาก ' + scoreLogs.length + ' ครั้งที่ทำแบบทดสอบ';
+                    }
+                } else {
+                    document.getElementById('statAvgScore').textContent = '- / 10';
+                    document.getElementById('statAvgScoreSub').textContent = 'รอการประมวลผล';
+                }
+
                 applyFilters(); // render ด้วย filter ปัจจุบัน
             } else {
                 document.getElementById('logTableBody').innerHTML =

@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini-Tinkercad Sandbox</title>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Chakra Petch', sans-serif; }
         body {
@@ -476,8 +482,32 @@
                 window.location.href = 'home.html';
                 return;
             }
-            // ✅ เข้ามาได้สำเร็จ → mark ว่าเข้า Circuit Simulation แล้ว
+            // ✅ เข้ามาได้สำเร็จ → set sessionStorage flag ทันที
             sessionStorage.setItem('sandboxDone', 'true');
+
+            // ✅ บันทึกลง sandbox_logs (แยก table) เพื่อให้คงอยู่หลัง logout
+            var _name  = sessionStorage.getItem('studentName')  || 'guest';
+            var _class = sessionStorage.getItem('studentClass') || '-';
+            var _no    = sessionStorage.getItem('studentNumber') || '0';
+
+            _supabase
+                .from('sandbox_logs')
+                .select('id')
+                .eq('name', _name).eq('class', _class).eq('no', _no)
+                .limit(1)
+                .then(function(res) {
+                    if (!res.data || res.data.length === 0) {
+                        _supabase.from('sandbox_logs').insert([{
+                            name:  _name,
+                            class: _class,
+                            no:    _no
+                        }]).then(function(r) {
+                            if (r.error) console.warn('sandbox_logs insert error:', r.error.message);
+                            else console.log('✅ บันทึก sandbox_logs สำเร็จ');
+                        });
+                    }
+                })
+                .catch(function(e) { console.warn('sandbox_logs check error:', e); });
         })();
 
         const sandbox = document.getElementById('sandboxBoard');
@@ -1528,11 +1558,25 @@
             return { components, wires: wireList, compCountId };
         }
 
+        function getSandboxSaveKey() {
+            var name  = sessionStorage.getItem('studentName')  || 'guest';
+            var cls   = sessionStorage.getItem('studentClass') || '-';
+            var no    = sessionStorage.getItem('studentNumber') || '0';
+            return 'sandbox_circuit_' + cls + '_' + no + '_' + name;
+        }
+
         function pushHistory() {
             if (isRestoringSnapshot) return; // กำลังทำ undo/redo อยู่ ห้ามบันทึกทับ
-            historyStack.push(captureSnapshot());
+            const snap = captureSnapshot();
+            historyStack.push(snap);
             if (historyStack.length > MAX_HISTORY) historyStack.shift();
             redoStack = []; // การกระทำใหม่ ทำให้ redo เดิมใช้ไม่ได้แล้ว
+
+            // ✅ Auto-save ลง localStorage เพื่อคงอยู่หลังย้อนกลับ/ออกจากหน้า
+            try {
+                localStorage.setItem(getSandboxSaveKey(), JSON.stringify(snap));
+            } catch(e) { console.warn('sandbox auto-save error:', e); }
+
             updateToolbarButtons();
         }
 
@@ -1939,8 +1983,26 @@
         }
 
         // ================= เริ่มต้น: บันทึก snapshot กระดานเปล่าไว้เป็นจุดแรกของ Undo/Redo =================
-        pushHistory();
-        updateToolbarButtons();
+        // ✅ Auto-restore: ไม่ได้บันทึก snapshot เปล่า ให้โหลด circuit ที่ทำค้างไว้ก่อนออกจากหน้า
+        (function autoRestoreCircuit() {
+            try {
+                var saved = localStorage.getItem(getSandboxSaveKey());
+                if (saved) {
+                    var snap = JSON.parse(saved);
+                    // ถ้ามีอุปกรณ์หรือสายไฟที่บันทึกไว้ ให้โหลดกลับทันที
+                    if (snap && snap.components && snap.components.length > 0) {
+                        restoreSnapshot(snap);
+                        historyStack.push(snap); // ให้ state นี้เป็นจุดเริ่มต้นของ Undo
+                        console.log('✅ โหลด circuit ที่ทำค้างไว้สำเร็จ (' + snap.components.length + ' ชิ้น)');
+                        updateToolbarButtons();
+                        return;
+                    }
+                }
+            } catch(e) { console.warn('sandbox auto-restore error:', e); }
+            // ไม่มีข้อมูลเก่า → บันทึก snapshot กระดานเปล่าเป็นจุดแรก
+            pushHistory();
+            updateToolbarButtons();
+        })();
     </script>
 </body>
 </html>

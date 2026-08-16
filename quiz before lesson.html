@@ -335,15 +335,57 @@
 
         // ฟังก์ชันช่วยเปลี่ยนสีพื้นหลังให้กล่องตัวเลือกเด่นชัดขึ้นเมื่อเด็กคลิกเลือก
         function highlightSelection(qIdx, selectedOptIdx) {
-            // เคลียร์สถานะ active เก่าของข้อนั้น ๆ
             for (let i = 0; i < 4; i++) {
                 const label = document.getElementById(`label-q${qIdx}-o${i}`);
                 if (label) label.classList.remove('active');
             }
-            // ใส่คลาสกระตุ้นให้ข้อที่ถูกเลือกเรืองแสง
             const activeLabel = document.getElementById(`label-q${qIdx}-o${selectedOptIdx}`);
             if (activeLabel) activeLabel.classList.add('active');
+            // 💾 บันทึกคำตอบที่เลือกลง localStorage
+            savePretestProgress();
         }
+
+        // ===== 💾 Pretest Progress Save/Load =====
+        function getPretestSaveKey() {
+            var name = sessionStorage.getItem('studentName') || 'guest';
+            var cls  = sessionStorage.getItem('studentClass') || '-';
+            var no   = sessionStorage.getItem('studentNumber') || '0';
+            return 'pretest_prog_' + cls + '_' + no + '_' + name;
+        }
+        function savePretestProgress() {
+            var answers = {};
+            quizData.forEach((q, qIdx) => {
+                var checked = document.querySelector(`input[name="question${qIdx}"]:checked`);
+                if (checked) answers[qIdx] = parseInt(checked.value);
+            });
+            localStorage.setItem(getPretestSaveKey(), JSON.stringify(answers));
+        }
+        function clearPretestProgress() {
+            localStorage.removeItem(getPretestSaveKey());
+        }
+        function restorePretestProgress() {
+            try {
+                var saved = JSON.parse(localStorage.getItem(getPretestSaveKey()));
+                if (!saved) return;
+                Object.keys(saved).forEach(qIdx => {
+                    var oIdx = saved[qIdx];
+                    var radio = document.querySelector(`input[name="question${qIdx}"][value="${oIdx}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        highlightSelectionSilent(parseInt(qIdx), oIdx);
+                    }
+                });
+            } catch(e) {}
+        }
+        function highlightSelectionSilent(qIdx, selectedOptIdx) {
+            for (let i = 0; i < 4; i++) {
+                var label = document.getElementById('label-q' + qIdx + '-o' + i);
+                if (label) label.classList.remove('active');
+            }
+            var activeLabel = document.getElementById('label-q' + qIdx + '-o' + selectedOptIdx);
+            if (activeLabel) activeLabel.classList.add('active');
+        }
+        // ============================================
 
         // เมื่อเด็กกดส่งข้อสอบในฟอร์ม
         var pretestStartTime = Date.now();
@@ -367,13 +409,23 @@
 
             // บันทึกคะแนนลง sessionStorage เพื่อไปใช้งานต่อวันข้างหน้า
             sessionStorage.setItem('quizScore', score);
-            sessionStorage.setItem('pretestDone', 'true'); // cache ไว้ใน session
-            markPretestDone(); // ✅ บันทึกลง Supabase (คงอยู่ข้ามเครื่อง/ข้ามวัน)
+            sessionStorage.setItem('pretestDone', 'true');
+            clearPretestProgress(); // 🗑️ ส่งข้อสอบแล้ว = ลบ progress ที่ค้างไว้
+            markPretestDone();
             savePretestScore(score);
 
-            // สั่งม้วนจอกลับไปด้านบนสุดด้วยความนุ่มนวลเพื่อให้เห็นผลคะแนนแบบสวย ๆ
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
+
+        // ===== 🚀 window.onload: guard + restore progress =====
+        window.onload = function () {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = 'login.html';
+                return;
+            }
+            // คืนคำตอบที่บันทึกไว้
+            restorePretestProgress();
+        };
 
         async function markPretestDone() {
             var name = sessionStorage.getItem('studentName');

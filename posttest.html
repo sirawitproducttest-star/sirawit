@@ -443,7 +443,7 @@
                     .insert([{
                         name: studentName,
                         class: studentClass,
-                        student_no: `เลขที่ ${studentNo}`,
+                        no: 'No.' + studentNo,
                         activity: 'posttest',
                         score: `${score} / ${shuffledQuiz.length}`,
                         time_spent: timeSpent,
@@ -463,12 +463,41 @@
                 return;
             }
 
+            var name = sessionStorage.getItem('studentName');
+            var cls = sessionStorage.getItem('studentClass');
+            var no = sessionStorage.getItem('studentNumber');
+
+            // ✅ Restore sandboxDone จาก sandbox_logs (แยก table)
+            if (sessionStorage.getItem('sandboxDone') !== 'true' && name) {
+                try {
+                    var sbRes = await _supabase.from('sandbox_logs')
+                        .select('id')
+                        .eq('name', name).eq('class', cls).eq('no', no)
+                        .limit(1);
+                    if (sbRes.data && sbRes.data.length > 0) {
+                        sessionStorage.setItem('sandboxDone', 'true');
+                    }
+                } catch(e) { console.warn('posttest: sandboxDone restore error:', e); }
+            }
+
+            // 🔄 Restore flags อื่นๆ จาก Supabase activity_logs (กรณีกลับมาหลัง logout)
+            if ((sessionStorage.getItem('quiz10sDone') !== 'true' ||
+                 sessionStorage.getItem('mahjongDone') !== 'true') && name) {
+                try {
+                    var { data: actData } = await _supabase
+                        .from('activity_logs')
+                        .select('activity')
+                        .eq('name', name).eq('class', cls).eq('no', 'No.' + no);
+                    if (actData) {
+                        var doneActs = actData.map(function(r) { return r.activity; });
+                        if (doneActs.includes('quiz10s')) sessionStorage.setItem('quiz10sDone', 'true');
+                        if (doneActs.includes('mahjong')) sessionStorage.setItem('mahjongDone', 'true');
+                    }
+                } catch(e) { console.warn('restore flags error:', e); }
+            }
+
             // 🔒 ตรวจสอบลำดับครบผ่าน Supabase (pretest) + sessionStorage (อื่นๆ)
             if (sessionStorage.getItem('pretestDone') !== 'true') {
-                var name = sessionStorage.getItem('studentName');
-                var cls = sessionStorage.getItem('studentClass');
-                var no = sessionStorage.getItem('studentNumber');
-
                 if (!name) {
                     alert('⚠️ กรุณา Login ก่อนนะครับ');
                     window.location.href = 'login.html';

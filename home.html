@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OUTSIDE.LEARNING - DASHBOARD</title>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -20,53 +26,87 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             color: #ffffff;
-            padding: 20px;
+            padding: 16px;
         }
 
         .container {
             width: 100%;
             max-width: 900px;
+            margin-top: 16px;
+            margin-bottom: 24px;
         }
 
         .dashboard-card {
             background: #ffffff;
             color: #333333;
             border-radius: 20px;
-            padding: 35px;
+            padding: 28px 24px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             text-align: left;
         }
 
+        /* ===== HEADER ===== */
         .dashboard-header {
             color: #03112d;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            padding-bottom: 14px;
+            margin-bottom: 20px;
             font-weight: 700;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-brand {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #03112d;
+            line-height: 1.2;
+        }
+
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
         }
 
         .user-welcome {
-            font-size: 1rem;
+            font-size: 0.82rem;
             color: #475569;
             font-weight: 400;
+            text-align: right;
+            line-height: 1.4;
         }
 
+        .btn-logout {
+            background: #ef4444;
+            color: #ffffff;
+            border: none;
+            padding: 7px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* ===== PROGRESS ===== */
         .progression-section {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 30px;
+            padding: 14px 16px;
+            margin-bottom: 22px;
         }
 
         .progress-title {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: #475569;
             margin-bottom: 10px;
@@ -76,7 +116,7 @@
 
         .progress-bar-container {
             width: 100%;
-            height: 15px;
+            height: 14px;
             background: #cbd5e1;
             border-radius: 10px;
             overflow: hidden;
@@ -87,33 +127,42 @@
             height: 100%;
             background: linear-gradient(90deg, #00d2ff, #0056b3);
             border-radius: 10px;
+            transition: width 0.5s ease;
         }
 
+        /* ===== CHAPTER ===== */
         .chapter-box {
             border-left: 5px solid #00d2ff;
-            padding-left: 15px;
-            margin-bottom: 30px;
+            padding-left: 14px;
+            margin-bottom: 20px;
         }
 
         .chapter-title {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #0f172a;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
+            line-height: 1.4;
         }
 
+        /* ===== ACTIVITY STEPS ===== */
         .btn-go {
             background: #03112d;
             color: #ffffff;
             border: none;
-            padding: 10px 35px;
-            font-size: 1.1rem;
+            padding: 9px 20px;
+            font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
-            border-radius: 5px;
-            transition: 0.3s;
+            border-radius: 8px;
+            transition: 0.25s;
             text-decoration: none;
             display: inline-block;
+            white-space: nowrap;
+            min-height: 38px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
         }
 
         .btn-go:hover {
@@ -134,18 +183,18 @@
         .step-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .step-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-radius: 8px;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 10px;
             background: #f1f5f9;
             border: 1px solid #e2e8f0;
-            transition: 0.3s;
+            transition: 0.25s;
         }
 
         .step-item.done {
@@ -156,12 +205,12 @@
         .step-item.active {
             background: #eff6ff;
             border-color: #93c5fd;
-            box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
         }
 
         .step-num {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -185,9 +234,10 @@
 
         .step-label {
             flex: 1;
-            font-size: 1rem;
+            font-size: 0.92rem;
             font-weight: 600;
             color: #1e293b;
+            line-height: 1.35;
         }
 
         .step-item.done .step-label {
@@ -195,8 +245,9 @@
         }
 
         .step-status {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: #64748b;
+            flex-shrink: 0;
         }
 
         .step-item.done .step-status {
@@ -204,14 +255,49 @@
             font-weight: 700;
         }
 
-        .btn-logout {
-            background: #ef4444;
-            color: #ffffff;
-            border: none;
-            padding: 5px 15px;
-            font-size: 0.9rem;
-            border-radius: 5px;
-            cursor: pointer;
+        /* ===== MOBILE ≤ 480px ===== */
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+
+            .dashboard-card {
+                padding: 18px 14px;
+                border-radius: 14px;
+            }
+
+            .header-brand { font-size: 1.05rem; }
+
+            .user-welcome { font-size: 0.75rem; }
+
+            .chapter-title { font-size: 0.9rem; }
+
+            .step-item {
+                flex-wrap: wrap;
+                padding: 10px 12px;
+                gap: 8px;
+            }
+
+            /* บนมือถือ: label กว้างเต็มหลังเลข, ปุ่มขยับไปบรรทัดถัดไปชิดขวา */
+            .step-label {
+                font-size: 0.85rem;
+                flex-basis: calc(100% - 46px); /* เต็มความกว้างลบ step-num+gap */
+            }
+
+            .step-status {
+                margin-left: auto;
+            }
+
+            .btn-go {
+                padding: 8px 16px;
+                font-size: 0.82rem;
+                min-height: 36px;
+            }
+
+            .progress-title { font-size: 0.85rem; }
+        }
+
+        /* ===== TABLET ≤ 768px ===== */
+        @media (max-width: 768px) {
+            .dashboard-header { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -221,8 +307,8 @@
     <div class="container">
         <div class="dashboard-card">
             <h2 class="dashboard-header">
-                <span>OUTSIDE.LEARNING BY SIRAWIT</span>
-                <div style="display: flex; align-items: center; gap: 15px;">
+                <span class="header-brand">OUTSIDE.LEARNING<br>BY SIRAWIT</span>
+                <div class="header-right">
                     <span class="user-welcome" id="welcomeText">ผู้เรียน: กำลังโหลด...</span>
                     <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
                 </div>
@@ -264,7 +350,8 @@
                 href: '10-sec question.html',
                 color: '#22c55e',
                 doneKey: 'quiz10sDone',
-                requires: ['pretestDone']
+                requires: ['pretestDone'],
+                repeatable: true
             },
             {
                 id: 'sandbox',
@@ -272,7 +359,8 @@
                 href: 'sandbox.html',
                 color: '#0284c7',
                 doneKey: 'sandboxDone',
-                requires: ['pretestDone', 'quiz10sDone']
+                requires: ['pretestDone'],
+                repeatable: true
             },
             {
                 id: 'mahjong',
@@ -280,7 +368,8 @@
                 href: 'mahjong_game.html',
                 color: '#3b82f6',
                 doneKey: 'mahjongDone',
-                requires: ['pretestDone', 'quiz10sDone', 'sandboxDone']
+                requires: ['pretestDone'],
+                repeatable: true
             },
             {
                 id: 'posttest',
@@ -301,6 +390,7 @@
                 const isDone = sessionStorage.getItem(act.doneKey) === 'true';
                 const isUnlocked = act.requires.every(k => sessionStorage.getItem(k) === 'true');
                 const isActive = !isDone && isUnlocked;
+                const canRepeat = isDone && act.repeatable; // 🔄 ทำซ้ำได้
                 if (isDone) doneCount++;
 
                 const item = document.createElement('div');
@@ -316,9 +406,39 @@
 
                 const rightEl = document.createElement('div');
                 rightEl.className = 'step-status';
+                rightEl.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;';
 
                 if (isDone) {
-                    rightEl.textContent = 'เสร็จแล้ว ✅';
+                    const doneSpan = document.createElement('span');
+                    doneSpan.textContent = 'เสร็จแล้ว ✅';
+                    rightEl.appendChild(doneSpan);
+
+                    // 🔄 ถ้าทำซ้ำได้ ให้แสดงปุ่มพร้อมข้อความที่เหมาะสม
+                    if (canRepeat) {
+                        const replayBtn = document.createElement('a');
+                        replayBtn.href = act.href;
+                        replayBtn.className = 'btn-go';
+                        replayBtn.style.cssText = `background:${act.color}; padding:6px 14px; font-size:0.82rem; opacity:0.85;`;
+
+                        // สำหรับ sandbox: ตรวจว่ามี circuit บันทึกไว้หรือไม่
+                        if (act.id === 'sandbox') {
+                            var _name  = sessionStorage.getItem('studentName')  || 'guest';
+                            var _cls   = sessionStorage.getItem('studentClass') || '-';
+                            var _no    = sessionStorage.getItem('studentNumber') || '0';
+                            var saveKey = 'sandbox_circuit_' + _cls + '_' + _no + '_' + _name;
+                            var savedCircuit = localStorage.getItem(saveKey);
+                            var hasData = false;
+                            try {
+                                var snap = savedCircuit ? JSON.parse(savedCircuit) : null;
+                                hasData = snap && snap.components && snap.components.length > 0;
+                            } catch(e) {}
+                            replayBtn.textContent = hasData ? '▶ ทำต่อ' : '🔄 เริ่มใหม่';
+                        } else {
+                            replayBtn.textContent = '🔄 เล่นอีกครั้ง';
+                        }
+
+                        rightEl.appendChild(replayBtn);
+                    }
                 } else if (isUnlocked) {
                     const btn = document.createElement('a');
                     btn.href = act.href;
@@ -346,6 +466,43 @@
         }
 
         // ป้องกันด่านการลักไก่แอบเปิดหน้านี้โดยยังไม่ได้ Login
+        // ===== 🔄 Restore done flags จาก Supabase หลัง logout =====
+        async function restoreDoneFlags() {
+            var name = sessionStorage.getItem('studentName');
+            var cls  = sessionStorage.getItem('studentClass');
+            var no   = sessionStorage.getItem('studentNumber');
+            if (!name) return;
+
+            // 1. ดึงกิจกรรมหลักจาก activity_logs (pretest, quiz10s, mahjong, posttest)
+            try {
+                var { data } = await _supabase
+                    .from('activity_logs')
+                    .select('activity')
+                    .eq('name', name).eq('class', cls).eq('no', 'No.' + no);
+
+                if (data && data.length > 0) {
+                    var done = data.map(function(r) { return r.activity; });
+                    if (done.includes('pretest'))  sessionStorage.setItem('pretestDone',  'true');
+                    if (done.includes('quiz10s'))  sessionStorage.setItem('quiz10sDone',  'true');
+                    if (done.includes('mahjong'))  sessionStorage.setItem('mahjongDone',  'true');
+                    if (done.includes('posttest')) sessionStorage.setItem('posttestDone', 'true');
+                }
+            } catch(e) { console.warn('restoreDoneFlags (activity_logs) error:', e); }
+
+            // 2. ดึง sandbox จาก sandbox_logs (แยก table)
+            try {
+                var sbRes = await _supabase
+                    .from('sandbox_logs')
+                    .select('id')
+                    .eq('name', name).eq('class', cls).eq('no', no)
+                    .limit(1);
+                if (sbRes.data && sbRes.data.length > 0) {
+                    sessionStorage.setItem('sandboxDone', 'true');
+                }
+            } catch(e) { console.warn('restoreDoneFlags (sandbox_logs) error:', e); }
+        }
+        // =========================================================
+
         window.onload = function () {
             if (sessionStorage.getItem('isLoggedIn') !== 'true') {
                 window.location.href = 'login.html';
@@ -354,7 +511,9 @@
                 const sClass = sessionStorage.getItem('studentClass');
                 const sNo = sessionStorage.getItem('studentNumber');
                 document.getElementById('welcomeText').innerText = `ผู้เรียน ${name} ${sClass} เลขที่ ${sNo}`;
-                renderActivities();
+                restoreDoneFlags().then(function() {
+                    renderActivities();
+                });
             }
         }
 

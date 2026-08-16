@@ -462,7 +462,7 @@
 
     <script>
         // 🔒 Guard: ต้องทำ Pre-test ก่อนถึงจะเข้าได้
-        (function() {
+        (function () {
             if (sessionStorage.getItem('isLoggedIn') !== 'true') {
                 alert('⚠️ กรุณา Login ก่อนนะครับ');
                 window.location.href = 'login.html';
@@ -695,13 +695,47 @@
         const TIME_LIMIT = 10.0;
         let gameStartTime = 0; // บันทึกเวลาเริ่มต้น
 
+        // ===== 💾 Progress Save/Load (quiz10s) per Account =====
+        function getQuiz10sSaveKey() {
+            var name = sessionStorage.getItem('studentName') || 'guest';
+            var cls = sessionStorage.getItem('studentClass') || '-';
+            var no = sessionStorage.getItem('studentNumber') || '0';
+            return 'quiz10s_prog_' + cls + '_' + no + '_' + name;
+        }
+        function saveQ10sProgress() {
+            localStorage.setItem(getQuiz10sSaveKey(), JSON.stringify({
+                qi: currentIndex, sc: score, lv: lives
+            }));
+        }
+        function loadQ10sProgress() {
+            try { return JSON.parse(localStorage.getItem(getQuiz10sSaveKey())); }
+            catch (e) { return null; }
+        }
+        function clearQ10sProgress() {
+            localStorage.removeItem(getQuiz10sSaveKey());
+        }
+        // =========================================================
+
         function startGame() {
             document.getElementById('rulesPage').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             currentIndex = 0;
             score = 0;
-            lives = 3; // รีเซ็ตหัวใจเป็น 3 ดวงเต็ม
-            gameStartTime = Date.now(); // เริ่มนับเวลา
+            lives = 3;
+            gameStartTime = Date.now();
+            clearQ10sProgress(); // 🗑️ เริ่มใหม่ = ลบ progress เก่า
+            updateHeartsUI();
+            document.getElementById('scoreText').textContent = score;
+            startQuestion();
+        }
+
+        function resumeGame(savedState) {
+            document.getElementById('rulesPage').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            currentIndex = savedState.qi;
+            score = savedState.sc;
+            lives = savedState.lv;
+            gameStartTime = Date.now(); // timer เริ่มนับใหม่
             updateHeartsUI();
             document.getElementById('scoreText').textContent = score;
             startQuestion();
@@ -800,6 +834,7 @@
                 score += 1;
                 document.getElementById('scoreText').textContent = score;
                 currentIndex++;
+                saveQ10sProgress(); // 💾 บันทึกความคืบหน้า
                 startQuestion();
             } else {
                 triggerShake();
@@ -833,19 +868,20 @@
             fbBox.style.borderColor = themeColor;
             fbBox.style.background = `${themeColor}22`;
             fbTitle.style.color = themeColor;
+            fbTitle.textContent = titleText;
             fbText.textContent = explainText;
 
             fbBox.style.display = 'block';
 
             const btnGrid = document.getElementById('btnGrid');
             btnGrid.innerHTML = `
-                <button class="btn-next-inline" onclick="nextQuestionAfterFeedback()">➔ ไปทำข้อถัดไป</button>
+                <button class="btn-next-inline" style="display:block;" onclick="nextQuestionAfterFeedback()">➔ ไปทำข้อถัดไป</button>
             `;
-            document.querySelector('.btn-next-inline').style.display = 'block';
         }
 
         function nextQuestionAfterFeedback() {
             currentIndex++;
+            saveQ10sProgress(); // 💾 บันทึกหลังแพ้
             startQuestion();
         }
 
@@ -890,6 +926,7 @@
 
             // ✅ Mark quiz10sDone เมื่อเกมจบ (ทั้งชนะและแพ้)
             sessionStorage.setItem('quiz10sDone', 'true');
+            clearQ10sProgress(); // 🗑️ จบเกมแล้ว = ลบ progress ที่ค้างไว้
 
             // บันทึกคะแนนลง Supabase
             saveQuizScore(score, lives, isWin);
@@ -908,6 +945,12 @@
                 var ss = (totalSec % 60).toString().padStart(2, '0');
                 var timeStr = mm + ' min ' + ss + ' sec';
 
+                // 🗑️ ลบ record เก่าของนักเรียนคนนี้ก่อน (ถ้ามี) เพื่อให้มีแค่ 1 row ต่อนักเรียน
+                await _supabase10s.from('activity_logs')
+                    .delete()
+                    .eq('name', name).eq('class', cls).eq('no', 'No.' + no).eq('activity', 'quiz10s');
+
+                // ✅ บันทึกผลล่าสุด (เก็บเฉพาะผลสุดท้ายหลังทำกิจกรรมเสร็จ)
                 await _supabase10s.from('activity_logs').insert([{
                     name: name,
                     class: cls,
@@ -915,21 +958,55 @@
                     activity: 'quiz10s',
                     score: finalScore + ' / ' + QUESTIONS.length,
                     time_spent: timeStr,
-                    hearts: heartsLeft + ' / 3'
+                    hearts: '-'
                 }]);
-                console.log('Quiz10s score saved!');
+                console.log('Quiz10s score saved! (1 row per student)');
             } catch (e) { console.error('Save quiz10s error:', e); }
         }
 
         function restartQuiz() {
+            clearQ10sProgress();
             document.getElementById('resultOverlay').style.display = 'none';
             document.getElementById('rulesPage').style.display = 'flex';
             document.getElementById('gameArea').style.display = 'none';
         }
 
         function backtohome() {
+            // 💾 บันทึก progress ก่อนออก เฉพาะกรณียังมีหัวใจเหลือ (ไม่ใช่ game over)
+            if (document.getElementById('gameArea').style.display !== 'none' && lives > 0) {
+                saveQ10sProgress();
+            }
             window.location.href = "home.html";
         }
+
+        // ===== 🚀 Auto-Resume on Page Load =====
+        window.onload = function () {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = 'login.html';
+                return;
+            }
+            var saved = loadQ10sProgress();
+            if (saved && saved.qi > 0 && saved.qi < QUESTIONS.length && saved.lv > 0) {
+                // ✅ พบ progress ที่ค้างไว้ → แสดงกล่อง resume เหนือ rules page
+                var rulesPage = document.getElementById('rulesPage');
+                var resumeBox = document.createElement('div');
+                resumeBox.style.cssText = 'margin-top:18px; background:#1e293b; border:2px solid #facc15; border-radius:12px; padding:16px 20px; text-align:center;';
+                resumeBox.innerHTML = `
+                    <div style="color:#facc15; font-size:1rem; margin-bottom:12px;">
+                        ⚡ คุณทำค้างไว้ที่ <strong>ข้อ ${saved.qi + 1} / ${QUESTIONS.length}</strong>
+                        &nbsp;•&nbsp; คะแนน: ${saved.sc} &nbsp;•&nbsp; ❤️ ${saved.lv}
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                        <button class="btn-start-game" style="background:#facc15; color:#0f172a;"
+                            onclick="resumeGame(${JSON.stringify(saved).replace(/"/g, '&quot;')})"
+                        >▶ ทำต่อจากข้อ ${saved.qi + 1}</button>
+                        <button class="btn-start-game" style="background:#64748b;"
+                            onclick="startGame()"
+                        >🔄 เริ่มใหม่</button>
+                    </div>`;
+                rulesPage.appendChild(resumeBox);
+            }
+        };
     </script>
 </body>
 
