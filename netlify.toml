@@ -1,0 +1,37 @@
+# Netlify configuration for Techquest - Outside.Learning
+
+[build]
+  publish = "."
+
+# ตั้ง default page เป็น login
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 302
+
+# ป้องกัน 404 เมื่อ refresh หน้าใดก็ตาม
+[[redirects]]
+  from = "/*"
+  to = "/:splat"
+  status = 200
+
+# Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Cache ไฟล์ static (รูป, svg)
+[[headers]]
+  for = "/homepage/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

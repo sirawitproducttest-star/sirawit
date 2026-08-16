@@ -1,0 +1,6 @@
+# Techquest - Outside.Learning
+# ไฟล์ที่ไม่ต้องการใน production
+.vscode/
+*.md
+!README.md
+.git/
