@@ -385,11 +385,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
-        const _supabase10s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
+    <script src="supabase-config.js"></script>
 </head>
 
 <body>
@@ -480,6 +476,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🪵",
+                image: "mahjongicon/wood.png",
                 text: "สมบัติของไม้ คือมีความแข็งแรง ทนทาน และเป็นฉนวนไฟฟ้า",
                 type: "tf",
                 isCorrect: true, // ถูกต้อง ไม้ไม่นำไฟฟ้า
@@ -488,6 +485,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🧴",
+                image: "10 questions/bottle.png",
                 text: "ขวดน้ำพลาสติกใส (PET) มีคุณสมบัติทนความร้อนสูง สามารถใส่น้ำเดือดได้ทันที",
                 type: "tf",
                 isCorrect: false, // ผิด PET ไม่ทนความร้อนสูง
@@ -496,6 +494,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🏢",
+                image: "mahjongicon/steel_poles.png",
                 text: "เลือกใช้เหล็กทำโครงสร้างตึก เพราะเหล็กมีคุณสมบัติรับแรงกดและแรงดึงได้สูง",
                 type: "tf",
                 isCorrect: true,
@@ -504,6 +503,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🥤",
+                image: "10 questions/plastic.png",
                 text: "พลาสติก มีสมบัติเด่นคือน้ำหนักเบาและนำไฟฟ้าได้ดี",
                 type: "tf",
                 isCorrect: false, // ผิด พลาสติกเป็นฉนวน
@@ -512,6 +512,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🥉",
+                image: "10 questions/aluminium_window.png",
                 text: "ใช้อลูมิเนียมในการทำโครงหน้าต่าง เพราะน้ำหนักเบาและไม่เป็นสนิมเหล็ก",
                 type: "tf",
                 isCorrect: true,
@@ -520,6 +521,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🪟",
+                image: "mahjongicon/glass.png",
                 text: "สมบัติเด่นของแก้วคือ ความใส โปร่งแสง และทนต่อแรงกระแทกได้สูงมาก",
                 type: "tf",
                 isCorrect: false, // ผิด แก้วแตกง่าย (ยกเว้น tempered)
@@ -528,6 +530,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🛞",
+                image: "mahjongicon/rubber.png",
                 text: "ยางธรรมชาติ มีความยืดหยุ่นสูงและทนต่อการขูดขีด",
                 type: "tf",
                 isCorrect: true,
@@ -536,6 +539,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🔨",
+                image: "mahjongicon/ironbar.png",
                 text: "วัสดุกลุ่มโลหะ โดยทั่วไปจะมีคุณสมบัตินำความร้อนและนำไฟฟ้าได้ดี",
                 type: "tf",
                 isCorrect: true,
@@ -544,6 +548,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "📦",
+                image: "10 questions/box.png",
                 text: "เลือกใช้กระดาษทำกล่องบรรจุภัณฑ์เพราะ น้ำหนักเบาและทนความชื้นได้ดี",
                 type: "tf",
                 isCorrect: false, // ผิด กระดาษไม่ทนความชื้น
@@ -552,6 +557,7 @@
             {
                 topic: "วัสดุในชีวิตประจำวัน",
                 icon: "🪑",
+                image: "10 questions/wood_planks.png",
                 text: "ไม้ เป็นวัสดุที่หาได้ง่ายและมีลวดลายสวยงามตามธรรมชาติ",
                 type: "tf",
                 isCorrect: true,
@@ -562,7 +568,8 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "🪛",
-                text: "หากต้องการขันสกรูที่เป็น 'หัวแฉก (+)' ต้องเลือกใช้ไขควงปากแบน",
+                image: "mahjongicon/screwdriver.png",
+                text: "หากต้องการขันสกรูที่เป็นหัวแฉก (+) ต้องเลือกใช้ไขควงปากแบน",
                 type: "tf",
                 isCorrect: false, // ผิด ต้องใช้ไขควงปากแฉก
                 explain: "ผิดวิธี การใช้ไขควงผิดประเภททำให้ร่องหัวสกรูเสียหาย"
@@ -570,6 +577,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "🔨",
+                image: "mahjongicon/hammer.png",
                 text: "เมื่อต้องการถอนตะปูออกจากไม้ ต้องใช้เครื่องมือที่เรียกว่าค้อนหงอน",
                 type: "tf",
                 isCorrect: true,
@@ -578,7 +586,8 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "✂️",
-                text: "คีมรวม (หรือคีมปากจระเข้)' เป็นเครื่องมือช่างที่ใช้สำหรับ **ตัดลวดไฟฟ้า** ได้เพียงอย่างเดียว",
+                image: "mahjongicon/pliers.png",
+                text: "คีมรวม เป็นเครื่องมือช่างที่ใช้สำหรับตัดลวดไฟฟ้าได้เพียงอย่างเดียว",
                 type: "tf",
                 isCorrect: false, // ผิด คีมรวมใช้จับและคงได้ด้วย
                 explain: "ผิด คีมรวมถูกออกแบบมาให้ใช้จับ ขัน และตัดลวดได้ในตัวเดียว"
@@ -586,6 +595,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "🪚",
+                image: "mahjongicon/woodsaw.png",
                 text: "ต้องการตัดท่อเหล็กให้ขาดออกจากกัน ต้องเลือกใช้เลื่อยลันดา",
                 type: "tf",
                 isCorrect: false, // ผิด เลื่อยลันดาใช้ตัดไม้
@@ -594,6 +604,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "📏",
+                image: "mahjongicon/Tape_measure.png",
                 text: "เมื่อต้องการวัดระยะทางหรือขนาดของวัตถุที่มีความยาวมากๆ ต้องใช้ตลับเมตร",
                 type: "tf",
                 isCorrect: true,
@@ -602,6 +613,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "📐",
+                image: "mahjongicon/square.png",
                 text: "เครื่องมือที่ใช้ตรวจสอบมุมฉาก (90 องศา) ของชิ้นงานไม้ เรียกว่าฉากเหล็ก",
                 type: "tf",
                 isCorrect: true,
@@ -610,7 +622,8 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "🪛",
-                text: "ควรใช้ไขควงปากแฉกไปงัดฝากระป๋องแทนการขันสกรู",
+                image: "10 questions/can.png",
+                text: "ควรใช้ไขควงปากแฉกในการงัดฝากระป๋อง",
                 type: "sd",
                 isCorrect: "dangerous",
                 explain: "อันตราย การใช้เครื่องมือผิดประเภททำให้เครื่องมือเสียหายและเกิดอุบัติเหตุได้"
@@ -618,6 +631,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "🔨",
+                image: "mahjongicon/hammer.png",
                 text: "ก่อนออกแรงตอกตะปูด้วยค้อนหงอน ต้องตรวจสอบว่าหัวค้อนและด้ามจับยึดกันแน่นสนิท",
                 type: "sd",
                 isCorrect: "secure",
@@ -626,6 +640,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "✂️",
+                image: "mahjongicon/pliers.png",
                 text: "เมื่อต้องการจับยึดชิ้นงานขนาดเล็กให้แน่นสนิท ควรเลือกใช้คีมปากจระเข้",
                 type: "tf",
                 isCorrect: true,
@@ -634,6 +649,7 @@
             {
                 topic: "เครื่องมือช่างพื้นฐาน",
                 icon: "🪚",
+                image: "mahjongicon/woodsaw.png",
                 text: "เลื่อยลันดา มีลักษณะฟันเลื่อยที่ใหญ่และห่าง เหมาะสำหรับงานตัดไม้",
                 type: "tf",
                 isCorrect: true,

@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini-Tinkercad Sandbox</title>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
+    <script src="supabase-config.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Chakra Petch', sans-serif; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Chakra Petch', sans-serif;
+        }
+
         body {
             background-color: #ffffff;
             color: #333333;
@@ -32,10 +35,19 @@
             box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
             z-index: 100;
         }
-        header h1 { font-size: 1.5rem; color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
-        
-        .header-controls { display: flex; gap: 15px; align-items: center; }
-        
+
+        header h1 {
+            font-size: 1.5rem;
+            color: #00d2ff;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
         .btn-sim {
             background: #22c55e;
             border: none;
@@ -48,11 +60,15 @@
             transition: 0.2s;
             box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
         }
+
         .btn-sim.simulating {
             background: #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
         }
-        .btn-sim:hover { transform: scale(1.05); }
+
+        .btn-sim:hover {
+            transform: scale(1.05);
+        }
 
         .btn-back {
             background: transparent;
@@ -63,7 +79,10 @@
             border-radius: 4px;
             transition: 0.3s;
         }
-        .btn-back:hover { background: rgba(0, 255, 255, 0.2); }
+
+        .btn-back:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
 
         .action-toolbar {
             background: rgba(3, 17, 45, 0.95);
@@ -75,6 +94,7 @@
             flex-wrap: wrap;
             flex-shrink: 0;
         }
+
         .tbtn {
             background: #102542;
             border: 1px solid #00d2ff;
@@ -88,11 +108,31 @@
             transition: 0.2s;
             white-space: nowrap;
         }
-        .tbtn:hover:not(:disabled) { background: #1a3a5c; border-color: #00ffff; }
-        .tbtn:disabled { opacity: 0.35; cursor: not-allowed; }
-        .tbtn-danger { border-color: #ef4444; color: #fca5a5; }
-        .tbtn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.15); }
-        .tbtn-divider { width: 1px; height: 22px; background: rgba(0, 210, 255, 0.3); }
+
+        .tbtn:hover:not(:disabled) {
+            background: #1a3a5c;
+            border-color: #00ffff;
+        }
+
+        .tbtn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .tbtn-danger {
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        .tbtn-danger:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .tbtn-divider {
+            width: 1px;
+            height: 22px;
+            background: rgba(0, 210, 255, 0.3);
+        }
 
         .workspace {
             display: flex;
@@ -105,7 +145,7 @@
             flex: 1;
             background-color: #ffffff;
             background-image: radial-gradient(circle, #cbd5e1 8%, transparent 8%),
-                              radial-gradient(circle, #cbd5e1 8%, transparent 8%);
+                radial-gradient(circle, #cbd5e1 8%, transparent 8%);
             background-size: 30px 30px;
             background-position: 0 0, 15px 15px;
             position: relative;
@@ -121,15 +161,40 @@
             border-radius: 8px;
             padding: 15px;
             color: white;
-            z-index: 200; 
+            z-index: 200;
             width: 220px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             display: none;
         }
-        .property-inspector h4 { font-size: 1rem; color: #00d2ff; margin-bottom: 10px; border-bottom: 1px solid rgba(0,210,255,0.3); padding-bottom: 5px; }
-        .property-row { margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .property-row label { font-size: 0.85rem; color: #cbd5e1; }
-        .property-row select { background: #102542; border: 1px solid #00d2ff; color: white; padding: 5px; border-radius: 4px; font-size: 0.9rem; }
+
+        .property-inspector h4 {
+            font-size: 1rem;
+            color: #00d2ff;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 210, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .property-row {
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .property-row label {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        .property-row select {
+            background: #102542;
+            border: 1px solid #00d2ff;
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
 
         .toolbox {
             width: 280px;
@@ -142,6 +207,7 @@
             box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
             z-index: 150;
         }
+
         .toolbox-title {
             font-size: 1.1rem;
             color: #00d2ff;
@@ -162,11 +228,13 @@
             user-select: none;
             transition: all 0.2s ease;
         }
+
         .tool-card:hover {
             border-color: #00ffff;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
             transform: translateY(-2px);
         }
+
         .tool-icon {
             width: 45px;
             height: 45px;
@@ -177,9 +245,21 @@
             justify-content: center;
             border: 1px solid rgba(0, 210, 255, 0.2);
         }
-        .tool-icon svg { width: 35px; height: 35px; }
-        .tool-info h3 { font-size: 0.95rem; color: #fff; }
-        .tool-info p { font-size: 0.75rem; color: #88a4e6; }
+
+        .tool-icon svg {
+            width: 35px;
+            height: 35px;
+        }
+
+        .tool-info h3 {
+            font-size: 0.95rem;
+            color: #fff;
+        }
+
+        .tool-info p {
+            font-size: 0.75rem;
+            color: #88a4e6;
+        }
 
         /* 🛠️ FIX: ดันอุปกรณ์ (รวมถึงขั้วต่อข้างใน) ให้ลอยเหนือชั้นสายไฟเสมอ (z-index: 60 > 50)
            เดิมตั้งไว้ที่ 10 (ต่ำกว่าสายไฟ) ทำให้พอวาดสายไฟเส้นแรกเสร็จ เส้นจะไปบังขั้วต่ออื่น
@@ -195,17 +275,34 @@
             border: 2px solid transparent;
             touch-action: none;
             user-select: none;
-            z-index: 60; 
+            z-index: 60;
         }
+
         .dropped-component.selected-active {
             border: 2px dashed #ffaa00;
             border-radius: 6px;
         }
-        
-        .dropped-component.comp-battery { width: auto; }
-        .dropped-component:not(.comp-battery) { width: 100px; }
-        .dropped-component svg { height: 75px; pointer-events: none; }
-        .comp-label { font-size: 0.75rem; color: #334155; margin-top: 2px; font-weight: 600; text-align: center; }
+
+        .dropped-component.comp-battery {
+            width: auto;
+        }
+
+        .dropped-component:not(.comp-battery) {
+            width: 100px;
+        }
+
+        .dropped-component svg {
+            height: 75px;
+            pointer-events: none;
+        }
+
+        .comp-label {
+            font-size: 0.75rem;
+            color: #334155;
+            margin-top: 2px;
+            font-weight: 600;
+            text-align: center;
+        }
 
         /* 🛠️ ห่อไอคอน+ขั้วต่อไว้ในกลุ่มเดียว เพื่อหมุน/พลิกเฉพาะส่วนนี้ โดยไม่ทำให้ตัวหนังสือ (ชื่ออุปกรณ์/ป้ายกระแส) กลับหัวตามไปด้วย */
         .comp-visual {
@@ -222,8 +319,10 @@
             margin-top: 4px;
             padding: 0 8px;
         }
+
         .terminal {
-            position: relative; /* 🛠️ FIX: ต้องมี position ก่อน z-index ถึงจะมีผลจริง */
+            position: relative;
+            /* 🛠️ FIX: ต้องมี position ก่อน z-index ถึงจะมีผลจริง */
             width: 14px;
             height: 14px;
             border-radius: 50%;
@@ -233,42 +332,62 @@
             z-index: 60;
             touch-action: none;
         }
-        .terminal:hover { transform: scale(1.4); }
-        .terminal.pos { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
-        .terminal.neg { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+
+        .terminal:hover {
+            transform: scale(1.4);
+        }
+
+        .terminal.pos {
+            background: #ef4444;
+            box-shadow: 0 0 4px #ef4444;
+        }
+
+        .terminal.neg {
+            background: #22c55e;
+            box-shadow: 0 0 4px #22c55e;
+        }
 
         /* ชั้นของสายไฟ (z-index: 50) อยู่ต่ำกว่าอุปกรณ์ (60) แต่สูงกว่าพื้นกระดาน เพื่อให้ขั้วต่อคลิกได้เสมอ */
         .wires-overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 50; 
-            pointer-events: none; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            pointer-events: none;
         }
+
         /* ล็อกสไตล์เส้นสายไฟให้ดักจับเมาส์แบบแม่นยำสูง */
         .wires-overlay g {
             cursor: pointer;
             pointer-events: all;
         }
+
         .wires-overlay polyline.real-wire {
             transition: stroke 0.2s, stroke-width 0.2s;
         }
+
         /* เส้นประสีส้มตอนกดเลือกค้างไว้ */
         .wires-overlay polyline.real-wire.wire-selected {
             stroke: #ffaa00 !important;
             stroke-width: 6px !important;
             stroke-dasharray: 4;
         }
+
         .wire-handle {
             cursor: grab;
             transition: r 0.15s;
             touch-action: none;
         }
+
         .snap-guide {
             stroke: #38bdf8;
             stroke-width: 1.5;
             stroke-dasharray: 6 4;
             pointer-events: none;
         }
+
         .wire-handle:hover {
             r: 11;
         }
@@ -276,17 +395,31 @@
         /* 🛠️ FIX: คลาสเหล่านี้ถูกเรียกใช้จาก JS อยู่แล้ว แต่ไม่เคยถูกนิยามใน CSS มาก่อน
            ทำให้หลอด LED ไม่เรืองแสงเพิ่ม และมอเตอร์ไม่หมุน แม้วงจรจะครบสมบูรณ์ */
         @keyframes led-flicker {
-            0%, 100% { filter: drop-shadow(0 0 6px #ef4444) drop-shadow(0 0 2px #fca5a5); }
-            50%      { filter: drop-shadow(0 0 14px #ef4444) drop-shadow(0 0 6px #fca5a5); }
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 6px #ef4444) drop-shadow(0 0 2px #fca5a5);
+            }
+
+            50% {
+                filter: drop-shadow(0 0 14px #ef4444) drop-shadow(0 0 6px #fca5a5);
+            }
         }
+
         .led-glow {
             animation: led-flicker 1.2s ease-in-out infinite;
         }
 
         @keyframes spin-prop {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         .motor-spin {
             transform-box: fill-box;
             transform-origin: center;
@@ -310,18 +443,30 @@
             display: none;
             pointer-events: none;
         }
+
         .current-badge.danger {
             color: #fca5a5;
             border-color: #ef4444;
         }
 
-        .tool-card { touch-action: none; }
+        .tool-card {
+            touch-action: none;
+        }
 
         /* ================= 🛠️ Responsive: แท็บเล็ต/มือถือแนวนอน ================= */
         @media (max-width: 900px) {
-            header { padding: 10px 15px; }
-            header h1 { font-size: 1.1rem; }
-            .workspace { flex-direction: column; }
+            header {
+                padding: 10px 15px;
+            }
+
+            header h1 {
+                font-size: 1.1rem;
+            }
+
+            .workspace {
+                flex-direction: column;
+            }
+
             .toolbox {
                 width: 100%;
                 height: 130px;
@@ -333,32 +478,87 @@
                 padding: 10px;
                 gap: 10px;
             }
-            .toolbox-title { display: none; }
+
+            .toolbox-title {
+                display: none;
+            }
+
             .tool-card {
                 flex: 0 0 auto;
                 width: 170px;
                 padding: 8px;
             }
-            .property-inspector { max-width: calc(100vw - 40px); }
+
+            .property-inspector {
+                max-width: calc(100vw - 40px);
+            }
         }
 
         /* ================= 🛠️ Responsive: มือถือแนวตั้ง ================= */
         @media (max-width: 480px) {
-            header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
-            header h1 { font-size: 0.9rem; }
-            .btn-sim { padding: 6px 12px; font-size: 0.85rem; }
-            .btn-back { padding: 6px 10px; font-size: 0.85rem; }
-            .action-toolbar { padding: 6px 10px; gap: 6px; }
-            .tbtn { padding: 5px 10px; font-size: 0.75rem; }
-            .toolbox { height: 110px; padding: 8px; gap: 8px; }
-            .tool-card { width: 140px; padding: 6px; gap: 8px; }
-            .tool-icon { width: 34px; height: 34px; }
-            .tool-icon svg { width: 26px; height: 26px; }
-            .tool-info h3 { font-size: 0.8rem; }
-            .tool-info p { font-size: 0.65rem; }
+            header {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 8px 12px;
+            }
+
+            header h1 {
+                font-size: 0.9rem;
+            }
+
+            .btn-sim {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+
+            .btn-back {
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
+
+            .action-toolbar {
+                padding: 6px 10px;
+                gap: 6px;
+            }
+
+            .tbtn {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+
+            .toolbox {
+                height: 110px;
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .tool-card {
+                width: 140px;
+                padding: 6px;
+                gap: 8px;
+            }
+
+            .tool-icon {
+                width: 34px;
+                height: 34px;
+            }
+
+            .tool-icon svg {
+                width: 26px;
+                height: 26px;
+            }
+
+            .tool-info h3 {
+                font-size: 0.8rem;
+            }
+
+            .tool-info p {
+                font-size: 0.65rem;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <header>
@@ -376,7 +576,8 @@
         <button class="tbtn" id="btnRotate" onclick="rotateSelected()" title="หมุนอุปกรณ์ 90 องศา">⟳ หมุน</button>
         <button class="tbtn" id="btnMirror" onclick="mirrorSelected()" title="พลิกกลับด้าน">⇋ พลิก</button>
         <div class="tbtn-divider"></div>
-        <button class="tbtn tbtn-danger" id="btnDelete" onclick="deleteSelected()" title="ลบอุปกรณ์/สายไฟที่เลือกอยู่">🗑 ลบ</button>
+        <button class="tbtn tbtn-danger" id="btnDelete" onclick="deleteSelected()"
+            title="ลบอุปกรณ์/สายไฟที่เลือกอยู่">🗑 ลบ</button>
     </div>
 
     <div class="workspace">
@@ -394,12 +595,13 @@
 
         <div class="toolbox">
             <h2 class="toolbox-title">กล่องเครื่องมือช่าง</h2>
-            
+
             <div class="tool-card" data-type="battery">
                 <div class="tool-icon">
                     <svg viewBox="0 0 100 100">
-                        <rect x="35" y="25" width="30" height="55" rx="4" fill="#2c3e50" stroke="#00d2ff" stroke-width="2"/>
-                        <rect x="43" y="17" width="14" height="8" fill="#ef4444"/>
+                        <rect x="35" y="25" width="30" height="55" rx="4" fill="#2c3e50" stroke="#00d2ff"
+                            stroke-width="2" />
+                        <rect x="43" y="17" width="14" height="8" fill="#ef4444" />
                         <text x="50" y="60" fill="#fff" font-size="16" text-anchor="middle" font-weight="bold">AA</text>
                     </svg>
                 </div>
@@ -412,8 +614,8 @@
             <div class="tool-card" data-type="led">
                 <div class="tool-icon">
                     <svg viewBox="0 0 100 100">
-                        <circle cx="50" cy="45" r="20" fill="#e74c3c" stroke="#fff" stroke-width="2"/>
-                        <line x1="45" y1="65" x2="45" y2="85" stroke="#94a3b8" stroke-width="4"/>
+                        <circle cx="50" cy="45" r="20" fill="#e74c3c" stroke="#fff" stroke-width="2" />
+                        <line x1="45" y1="65" x2="45" y2="85" stroke="#94a3b8" stroke-width="4" />
                     </svg>
                 </div>
                 <div class="tool-info">
@@ -425,8 +627,9 @@
             <div class="tool-card" data-type="resistor">
                 <div class="tool-icon">
                     <svg viewBox="0 0 100 100">
-                        <rect x="25" y="40" width="50" height="20" rx="10" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
-                        <line x1="10" y1="50" x2="25" y2="50" stroke="#fff" stroke-width="3"/>
+                        <rect x="25" y="40" width="50" height="20" rx="10" fill="#f59e0b" stroke="#fff"
+                            stroke-width="2" />
+                        <line x1="10" y1="50" x2="25" y2="50" stroke="#fff" stroke-width="3" />
                     </svg>
                 </div>
                 <div class="tool-info">
@@ -438,9 +641,9 @@
             <div class="tool-card" data-type="switch">
                 <div class="tool-icon">
                     <svg viewBox="0 0 100 100">
-                        <circle cx="25" cy="50" r="8" fill="#bdc3c7"/>
-                        <circle cx="75" cy="50" r="8" fill="#bdc3c7"/>
-                        <line x1="25" y1="46" x2="65" y2="20" stroke="#fff" stroke-width="5"/>
+                        <circle cx="25" cy="50" r="8" fill="#bdc3c7" />
+                        <circle cx="75" cy="50" r="8" fill="#bdc3c7" />
+                        <line x1="25" y1="46" x2="65" y2="20" stroke="#fff" stroke-width="5" />
                     </svg>
                 </div>
                 <div class="tool-info">
@@ -452,8 +655,8 @@
             <div class="tool-card" data-type="motor">
                 <div class="tool-icon">
                     <svg viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="30" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>
-                        <line x1="50" y1="25" x2="50" y2="10" stroke="#bdc3c7" stroke-width="4"/>
+                        <circle cx="50" cy="50" r="30" fill="#94a3b8" stroke="#64748b" stroke-width="2" />
+                        <line x1="50" y1="25" x2="50" y2="10" stroke="#bdc3c7" stroke-width="4" />
                     </svg>
                 </div>
                 <div class="tool-info">
@@ -466,48 +669,31 @@
 
     <script>
         // 🔒 Guard: ต้องทำ Pre-test และ 10 วินาที ก่อนถึงจะเข้า Circuit Simulation ได้
-        (function() {
-            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-                alert('⚠️ กรุณา Login ก่อนนะครับ');
-                window.location.href = 'login.html';
-                return;
-            }
-            if (sessionStorage.getItem('pretestDone') !== 'true') {
-                alert('⚠️ กรุณาทำแบบทดสอบก่อนเรียนให้เสร็จก่อนนะครับ');
-                window.location.href = 'home.html';
-                return;
-            }
-            if (sessionStorage.getItem('quiz10sDone') !== 'true') {
-                alert('⚠️ กรุณาทำกิจกรรม 1 คำถาม 10 วินาที ให้เสร็จก่อนนะครับ');
-                window.location.href = 'home.html';
-                return;
-            }
-            // ✅ เข้ามาได้สำเร็จ → set sessionStorage flag ทันที
-            sessionStorage.setItem('sandboxDone', 'true');
+        (function () {
 
             // ✅ บันทึกลง sandbox_logs (แยก table) เพื่อให้คงอยู่หลัง logout
-            var _name  = sessionStorage.getItem('studentName')  || 'guest';
+            var _name = sessionStorage.getItem('studentName') || 'guest';
             var _class = sessionStorage.getItem('studentClass') || '-';
-            var _no    = sessionStorage.getItem('studentNumber') || '0';
+            var _no = sessionStorage.getItem('studentNumber') || '0';
 
             _supabase
                 .from('sandbox_logs')
                 .select('id')
                 .eq('name', _name).eq('class', _class).eq('no', _no)
                 .limit(1)
-                .then(function(res) {
+                .then(function (res) {
                     if (!res.data || res.data.length === 0) {
                         _supabase.from('sandbox_logs').insert([{
-                            name:  _name,
+                            name: _name,
                             class: _class,
-                            no:    _no
-                        }]).then(function(r) {
+                            no: _no
+                        }]).then(function (r) {
                             if (r.error) console.warn('sandbox_logs insert error:', r.error.message);
                             else console.log('✅ บันทึก sandbox_logs สำเร็จ');
                         });
                     }
                 })
-                .catch(function(e) { console.warn('sandbox_logs check error:', e); });
+                .catch(function (e) { console.warn('sandbox_logs check error:', e); });
         })();
 
         const sandbox = document.getElementById('sandboxBoard');
@@ -515,16 +701,16 @@
         const inspectorFields = document.getElementById('inspectorFields');
         const wiresSvg = document.getElementById('wiresSvg');
         const simBtn = document.getElementById('simBtn');
-        
+
         let selectedComponent = null;
         let selectedWireGroup = null; // ย้ายมาเก็บสถานะเป็นกลุ่มเส้นวัตถุ
         let compCountId = 0;
         let isSimulating = false;
 
-        let activeTerminal = null; 
+        let activeTerminal = null;
         let currentWireGroup = null;
         let currentWireWaypoints = [];
-        let wires = []; 
+        let wires = [];
 
         // ================= 🛠️ ระบบ Undo/Redo (เก็บ snapshot สถานะวงจรทั้งหมด) =================
         let historyStack = [];
@@ -717,12 +903,12 @@
                 } else {
                     let widthSvg = count * 32 + 15;
                     let batteryBlocks = '';
-                    for(let i=0; i<count; i++) {
+                    for (let i = 0; i < count; i++) {
                         let offset = i * 32 + 5;
                         batteryBlocks += `
                             <rect x="${offset}" y="15" width="28" height="60" rx="3" fill="#0284c7" stroke="#334155" stroke-width="1.5"/>
                             <rect x="${offset + 8}" y="8" width="12" height="8" fill="#ef4444" rx="1"/>
-                            <text x="${offset + 14}" y="50" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold" transform="rotate(-90 ${offset+14} 50)">AA 1.5V</text>
+                            <text x="${offset + 14}" y="50" fill="#fff" font-size="11" text-anchor="middle" font-weight="bold" transform="rotate(-90 ${offset + 14} 50)">AA 1.5V</text>
                         `;
                     }
                     innerSvg = `<svg width="${widthSvg}" height="75" viewBox="0 0 ${widthSvg} 80">${batteryBlocks}</svg>`;
@@ -831,7 +1017,7 @@
         }
 
         function selectComponent(comp, type) {
-            clearWireSelection(); 
+            clearWireSelection();
             if (selectedComponent) selectedComponent.classList.remove('selected-active');
             selectedComponent = comp;
             selectedComponent.classList.add('selected-active');
@@ -962,12 +1148,12 @@
             if (inspector.contains(e.target) || e.target.classList.contains('terminal')) return;
             // ดักว่าถ้าคลิกโดนสายไฟ (polyline) จะไม่ล้างการเลือกสายไฟ (ให้ตัว g.onclick ของสายไฟจัดการเอง)
             if (e.target.tagName === 'polyline') return;
-            
+
             if (selectedComponent) {
                 selectedComponent.classList.remove('selected-active');
                 selectedComponent = null;
             }
-            clearWireSelection(); 
+            clearWireSelection();
             inspector.style.display = 'none';
             updateToolbarButtons();
         });
@@ -975,8 +1161,8 @@
         // ================= 🛠️ ระบบวาดและลบสายไฟแบบสมบูรณ์ไร้รอยต่อ =================
         function bindTerminalEvents(comp) {
             comp.querySelectorAll('.terminal').forEach(term => {
-                term.onclick = null; 
-                term.onclick = function(ev) {
+                term.onclick = null;
+                term.onclick = function (ev) {
                     ev.stopPropagation();
                     handleTerminalClick(term);
                 };
@@ -1068,7 +1254,7 @@
 
                 // 🛠️ ปรับมาเก็บสายไฟในรูปของกลุ่มวัตถุ <g> เพื่อยัดเส้นล่องหนและเส้นจริงคู่กัน (ใช้ polyline รองรับหลายจุดหักมุม)
                 const newWireGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                
+
                 // 1. เส้นล่องหนตัวหนา (ความหนา 20px) สำหรับรับแรงกดจากเมาส์/นิ้วโดยเฉพาะ เล็งง่าย 100%
                 const touchLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
                 touchLine.setAttribute("points", polylinePointsStr([center, center]));
@@ -1076,7 +1262,7 @@
                 touchLine.setAttribute("stroke", "transparent");
                 touchLine.setAttribute("stroke-width", "20");
                 touchLine.setAttribute("pointer-events", "stroke");
-                
+
                 // 2. เส้นจริงสีแดง/ดำ
                 const realLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
                 realLine.setAttribute("points", polylinePointsStr([center, center]));
@@ -1090,9 +1276,9 @@
 
                 newWireGroup.appendChild(touchLine);
                 newWireGroup.appendChild(realLine);
-                
-                newWireGroup.onclick = function(e) { handleWireGroupClick(newWireGroup, e); };
-                
+
+                newWireGroup.onclick = function (e) { handleWireGroupClick(newWireGroup, e); };
+
                 wiresSvg.appendChild(newWireGroup);
                 attachWireGrabHandlers(newWireGroup);
                 currentWireGroup = newWireGroup;
@@ -1100,21 +1286,21 @@
             } else {
                 const fromCompId = activeTerminal.parentNode.parentNode.id;
                 const toCompId = terminal.parentNode.parentNode.id;
-                
+
                 if (fromCompId === toCompId) {
                     cancelCurrentWire();
                     return;
                 }
-                
+
                 document.removeEventListener('pointermove', moveWire);
-                
+
                 const fromCenter = getTerminalCenter(activeTerminal);
                 const finalCenter = getTerminalCenter(terminal);
                 const fullPoints = [fromCenter, ...currentWireWaypoints, finalCenter];
                 currentWireGroup.querySelectorAll('polyline').forEach(pl => {
                     pl.setAttribute('points', polylinePointsStr(fullPoints));
                 });
-                
+
                 wires.push({
                     groupElement: currentWireGroup,
                     fromTerminalId: activeTerminal.id,
@@ -1559,9 +1745,9 @@
         }
 
         function getSandboxSaveKey() {
-            var name  = sessionStorage.getItem('studentName')  || 'guest';
-            var cls   = sessionStorage.getItem('studentClass') || '-';
-            var no    = sessionStorage.getItem('studentNumber') || '0';
+            var name = sessionStorage.getItem('studentName') || 'guest';
+            var cls = sessionStorage.getItem('studentClass') || '-';
+            var no = sessionStorage.getItem('studentNumber') || '0';
             return 'sandbox_circuit_' + cls + '_' + no + '_' + name;
         }
 
@@ -1575,7 +1761,7 @@
             // ✅ Auto-save ลง localStorage เพื่อคงอยู่หลังย้อนกลับ/ออกจากหน้า
             try {
                 localStorage.setItem(getSandboxSaveKey(), JSON.stringify(snap));
-            } catch(e) { console.warn('sandbox auto-save error:', e); }
+            } catch (e) { console.warn('sandbox auto-save error:', e); }
 
             updateToolbarButtons();
         }
@@ -1645,7 +1831,7 @@
 
             g.appendChild(touchLine);
             g.appendChild(realLine);
-            g.onclick = function(e) { handleWireGroupClick(g, e); };
+            g.onclick = function (e) { handleWireGroupClick(g, e); };
             wiresSvg.appendChild(g);
             attachWireGrabHandlers(g);
             return g;
@@ -1998,11 +2184,12 @@
                         return;
                     }
                 }
-            } catch(e) { console.warn('sandbox auto-restore error:', e); }
+            } catch (e) { console.warn('sandbox auto-restore error:', e); }
             // ไม่มีข้อมูลเก่า → บันทึก snapshot กระดานเปล่าเป็นจุดแรก
             pushHistory();
             updateToolbarButtons();
         })();
     </script>
 </body>
+
 </html>

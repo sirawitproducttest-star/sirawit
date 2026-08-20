@@ -7,11 +7,7 @@
     <title>OUTSIDE.LEARNING - DASHBOARD</title>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
+    <script src="supabase-config.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -71,9 +67,8 @@
 
         .header-right {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
+            align-items: center;
+            gap: 10px;
         }
 
         .user-welcome {
@@ -84,16 +79,65 @@
             line-height: 1.4;
         }
 
-        .btn-logout {
-            background: #ef4444;
-            color: #ffffff;
+        /* ===== 3 DOTS DROPDOWN MENU ===== */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .btn-dots {
+            background: transparent;
+            color: #03112d;
             border: none;
-            padding: 7px 16px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border-radius: 8px;
+            font-size: 1.6rem;
+            font-weight: 700;
             cursor: pointer;
-            white-space: nowrap;
+            padding: 0 5px;
+            line-height: 1;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: #ffffff;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .dropdown-content a {
+            color: #334155;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-content a:last-child {
+            border-bottom: none;
+            color: #ef4444;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f8fafc;
+            color: #0284c7;
+        }
+
+        .dropdown-content a:last-child:hover {
+            color: #dc2626;
+            background-color: #fef2f2;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
         }
 
         /* ===== PROGRESS ===== */
@@ -255,20 +299,114 @@
             font-weight: 700;
         }
 
+        /* ===== MODAL & BUTTONS FOR PASSWORD CHANGE ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 17, 45, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-box {
+            background: #0d1e36;
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.4);
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-box h3 {
+            color: #00ffcc;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: rgba(16, 37, 66, 0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 5px;
+            padding: 12px;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: center;
+            outline: none;
+        }
+
+        .modal-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-cancel {
+            background: transparent;
+            border: 2px solid #64748b;
+            color: #cbd5e1;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .btn-cancel:hover {
+            background: #64748b;
+            color: #fff;
+        }
+
+        .btn-cyber {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn-cyber:hover {
+            background: #00ffff;
+            color: #03112d;
+            box-shadow: 0 0 20px #00ffff;
+        }
+
         /* ===== MOBILE ≤ 480px ===== */
         @media (max-width: 480px) {
-            body { padding: 10px; }
+            body {
+                padding: 10px;
+            }
 
             .dashboard-card {
                 padding: 18px 14px;
                 border-radius: 14px;
             }
 
-            .header-brand { font-size: 1.05rem; }
+            .header-brand {
+                font-size: 1.05rem;
+            }
 
-            .user-welcome { font-size: 0.75rem; }
+            .user-welcome {
+                font-size: 0.75rem;
+            }
 
-            .chapter-title { font-size: 0.9rem; }
+            .chapter-title {
+                font-size: 0.9rem;
+            }
 
             .step-item {
                 flex-wrap: wrap;
@@ -276,10 +414,9 @@
                 gap: 8px;
             }
 
-            /* บนมือถือ: label กว้างเต็มหลังเลข, ปุ่มขยับไปบรรทัดถัดไปชิดขวา */
             .step-label {
                 font-size: 0.85rem;
-                flex-basis: calc(100% - 46px); /* เต็มความกว้างลบ step-num+gap */
+                flex-basis: calc(100% - 46px);
             }
 
             .step-status {
@@ -292,12 +429,16 @@
                 min-height: 36px;
             }
 
-            .progress-title { font-size: 0.85rem; }
+            .progress-title {
+                font-size: 0.85rem;
+            }
         }
 
         /* ===== TABLET ≤ 768px ===== */
         @media (max-width: 768px) {
-            .dashboard-header { font-size: 1.2rem; }
+            .dashboard-header {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
@@ -310,7 +451,14 @@
                 <span class="header-brand">OUTSIDE.LEARNING<br>BY SIRAWIT</span>
                 <div class="header-right">
                     <span class="user-welcome" id="welcomeText">ผู้เรียน: กำลังโหลด...</span>
-                    <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+                    <!-- Dropdown เมนู 3 จุด -->
+                    <div class="dropdown">
+                        <button class="btn-dots">⋮</button>
+                        <div class="dropdown-content">
+                            <a href="#" onclick="openChangePasswordModal()">เปลี่ยนรหัสผ่าน</a>
+                            <a href="#" onclick="logout()">ออกจากระบบ</a>
+                        </div>
+                    </div>
                 </div>
             </h2>
 
@@ -333,8 +481,21 @@
         </div>
     </div>
 
+    <!-- Modal เปลี่ยนรหัสผ่าน -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal-box">
+            <h3>🔐 เปลี่ยนรหัสผ่าน</h3>
+            <input type="password" id="oldPassword" class="modal-input" placeholder="รหัสผ่านเดิม">
+            <input type="password" id="newPassword" class="modal-input" placeholder="รหัสผ่านใหม่ (อย่างน้อย 4 ตัว)">
+            <input type="password" id="confirmPassword" class="modal-input" placeholder="ยืนยันรหัสผ่านใหม่">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-cancel" onclick="closeChangePasswordModal()">ยกเลิก</button>
+                <button class="btn-cyber" style="flex: 1;" onclick="submitChangePassword()">บันทึกรหัสผ่าน</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // กำหนดข้อมูลกิจกรรมตามลำดับ
         const ACTIVITIES = [
             {
                 id: 'pretest',
@@ -390,7 +551,7 @@
                 const isDone = sessionStorage.getItem(act.doneKey) === 'true';
                 const isUnlocked = act.requires.every(k => sessionStorage.getItem(k) === 'true');
                 const isActive = !isDone && isUnlocked;
-                const canRepeat = isDone && act.repeatable; // 🔄 ทำซ้ำได้
+                const canRepeat = isDone && act.repeatable;
                 if (isDone) doneCount++;
 
                 const item = document.createElement('div');
@@ -413,25 +574,23 @@
                     doneSpan.textContent = 'เสร็จแล้ว ✅';
                     rightEl.appendChild(doneSpan);
 
-                    // 🔄 ถ้าทำซ้ำได้ ให้แสดงปุ่มพร้อมข้อความที่เหมาะสม
                     if (canRepeat) {
                         const replayBtn = document.createElement('a');
                         replayBtn.href = act.href;
                         replayBtn.className = 'btn-go';
                         replayBtn.style.cssText = `background:${act.color}; padding:6px 14px; font-size:0.82rem; opacity:0.85;`;
 
-                        // สำหรับ sandbox: ตรวจว่ามี circuit บันทึกไว้หรือไม่
                         if (act.id === 'sandbox') {
-                            var _name  = sessionStorage.getItem('studentName')  || 'guest';
-                            var _cls   = sessionStorage.getItem('studentClass') || '-';
-                            var _no    = sessionStorage.getItem('studentNumber') || '0';
+                            var _name = sessionStorage.getItem('studentName') || 'guest';
+                            var _cls = sessionStorage.getItem('studentClass') || '-';
+                            var _no = sessionStorage.getItem('studentNumber') || '0';
                             var saveKey = 'sandbox_circuit_' + _cls + '_' + _no + '_' + _name;
                             var savedCircuit = localStorage.getItem(saveKey);
                             var hasData = false;
                             try {
                                 var snap = savedCircuit ? JSON.parse(savedCircuit) : null;
                                 hasData = snap && snap.components && snap.components.length > 0;
-                            } catch(e) {}
+                            } catch (e) { }
                             replayBtn.textContent = hasData ? '▶ ทำต่อ' : '🔄 เริ่มใหม่';
                         } else {
                             replayBtn.textContent = '🔄 เล่นอีกครั้ง';
@@ -458,22 +617,18 @@
                 list.appendChild(item);
             });
 
-            // อัพเดท progress bar
             const pct = Math.round((doneCount / ACTIVITIES.length) * 100);
             document.getElementById('progressLabel').textContent = `ความคืบหน้า ${doneCount}/${ACTIVITIES.length}`;
             document.getElementById('progressPct').textContent = pct + '%';
             document.getElementById('progressBar').style.width = pct + '%';
         }
 
-        // ป้องกันด่านการลักไก่แอบเปิดหน้านี้โดยยังไม่ได้ Login
-        // ===== 🔄 Restore done flags จาก Supabase หลัง logout =====
         async function restoreDoneFlags() {
             var name = sessionStorage.getItem('studentName');
-            var cls  = sessionStorage.getItem('studentClass');
-            var no   = sessionStorage.getItem('studentNumber');
+            var cls = sessionStorage.getItem('studentClass');
+            var no = sessionStorage.getItem('studentNumber');
             if (!name) return;
 
-            // 1. ดึงกิจกรรมหลักจาก activity_logs (pretest, quiz10s, mahjong, posttest)
             try {
                 var { data } = await _supabase
                     .from('activity_logs')
@@ -481,15 +636,14 @@
                     .eq('name', name).eq('class', cls).eq('no', 'No.' + no);
 
                 if (data && data.length > 0) {
-                    var done = data.map(function(r) { return r.activity; });
-                    if (done.includes('pretest'))  sessionStorage.setItem('pretestDone',  'true');
-                    if (done.includes('quiz10s'))  sessionStorage.setItem('quiz10sDone',  'true');
-                    if (done.includes('mahjong'))  sessionStorage.setItem('mahjongDone',  'true');
+                    var done = data.map(function (r) { return r.activity; });
+                    if (done.includes('pretest')) sessionStorage.setItem('pretestDone', 'true');
+                    if (done.includes('quiz10s')) sessionStorage.setItem('quiz10sDone', 'true');
+                    if (done.includes('mahjong')) sessionStorage.setItem('mahjongDone', 'true');
                     if (done.includes('posttest')) sessionStorage.setItem('posttestDone', 'true');
                 }
-            } catch(e) { console.warn('restoreDoneFlags (activity_logs) error:', e); }
+            } catch (e) { console.warn('restoreDoneFlags (activity_logs) error:', e); }
 
-            // 2. ดึง sandbox จาก sandbox_logs (แยก table)
             try {
                 var sbRes = await _supabase
                     .from('sandbox_logs')
@@ -499,9 +653,8 @@
                 if (sbRes.data && sbRes.data.length > 0) {
                     sessionStorage.setItem('sandboxDone', 'true');
                 }
-            } catch(e) { console.warn('restoreDoneFlags (sandbox_logs) error:', e); }
+            } catch (e) { console.warn('restoreDoneFlags (sandbox_logs) error:', e); }
         }
-        // =========================================================
 
         window.onload = function () {
             if (sessionStorage.getItem('isLoggedIn') !== 'true') {
@@ -511,9 +664,89 @@
                 const sClass = sessionStorage.getItem('studentClass');
                 const sNo = sessionStorage.getItem('studentNumber');
                 document.getElementById('welcomeText').innerText = `ผู้เรียน ${name} ${sClass} เลขที่ ${sNo}`;
-                restoreDoneFlags().then(function() {
+                restoreDoneFlags().then(function () {
                     renderActivities();
                 });
+            }
+        }
+
+        // ==========================================
+        // ฟังก์ชันระบบเปลี่ยนรหัสผ่าน (ใช้งานได้จริง 100%)
+        // ==========================================
+        function openChangePasswordModal() {
+            // ล้างค่าในช่องกรอกทุกครั้งที่เปิด
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+
+            document.getElementById('changePasswordModal').style.display = 'flex';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+        }
+
+        async function submitChangePassword() {
+            const oldPass = document.getElementById('oldPassword').value.trim();
+            const newPass = document.getElementById('newPassword').value.trim();
+            const confPass = document.getElementById('confirmPassword').value.trim();
+
+            if (!oldPass || !newPass || !confPass) {
+                alert('⚠️ กรุณากรอกข้อมูลให้ครบทุกช่องครับ');
+                return;
+            }
+
+            if (newPass.length < 4) {
+                alert('⚠️ รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 4 ตัวอักษรครับ');
+                return;
+            }
+
+            if (newPass !== confPass) {
+                alert('⚠️ รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกันครับ');
+                return;
+            }
+
+            const name = sessionStorage.getItem('studentName');
+            const sClass = sessionStorage.getItem('studentClass');
+            const sNo = sessionStorage.getItem('studentNumber');
+
+            try {
+                // 1. ดึงข้อมูล User ปัจจุบันจาก DB เพื่อเช็กรหัสเดิม
+                const { data: user, error: fetchError } = await _supabase
+                    .from('students')
+                    .select('id, password')
+                    .eq('name', name)
+                    .eq('class', sClass)
+                    .eq('no', sNo)
+                    .single();
+
+                if (fetchError || !user) {
+                    alert('❌ เกิดข้อผิดพลาดในการตรวจสอบผู้ใช้งาน กรุณาลองใหม่อีกครั้ง');
+                    return;
+                }
+
+                if (user.password !== oldPass) {
+                    alert('❌ รหัสผ่านเดิมไม่ถูกต้อง กรุณาตรวจสอบอีกครั้งครับ');
+                    return;
+                }
+
+                // 2. หากรหัสเดิมถูกต้อง ทำการอัปเดตรหัสผ่านใหม่ลงตาราง
+                const { error: updateError } = await _supabase
+                    .from('students')
+                    .update({ password: newPass })
+                    .eq('id', user.id);
+
+                if (updateError) {
+                    alert('❌ เกิดข้อผิดพลาดในการอัปเดตรหัสผ่าน: ' + updateError.message);
+                    return;
+                }
+
+                alert('✅ เปลี่ยนรหัสผ่านเรียบร้อยแล้ว! รหัสผ่านของคุณได้รับการอัปเดตอย่างสมบูรณ์');
+                closeChangePasswordModal();
+
+            } catch (err) {
+                console.error('Error changing password:', err);
+                alert('❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล');
             }
         }
 

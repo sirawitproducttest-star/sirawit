@@ -61,21 +61,9 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 20px;
-            width: 100%;
             max-width: 450px;
-            margin: 0 auto 25px auto;
-        }
-
-        .input-sub-group {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         label {
@@ -84,8 +72,7 @@
             color: #00d2ff;
         }
 
-        input,
-        select {
+        input {
             width: 100%;
             background: rgba(16, 37, 66, 0.8);
             border: 1px solid #00d2ff;
@@ -95,20 +82,6 @@
             font-size: 1.1rem;
             text-align: center;
             outline: none;
-        }
-
-        select {
-            text-align-last: center;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg fill='cyan' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-        }
-
-        select option {
-            background: #0d1e36;
-            color: #fff;
         }
 
         .btn-cyber {
@@ -131,19 +104,11 @@
             color: #03112d;
             box-shadow: 0 0 20px #00ffff;
         }
-
     </style>
     <!-- 1. ดึง Library Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script>
-        // 2. ใส่ URL และ Key ที่ก๊อปมาจาก Supabase
-        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
-
-        // 3. สร้าง ตัวเชื่อมต่อสำหรับใช้งาน
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
+    <script src="supabase-config.js"></script>
 </head>
 
 <body>
@@ -151,37 +116,22 @@
         <div class="login-card">
             <h1>OUTSIDE.LEARNING BY SIRAWIT</h1>
             <div class="divider"></div>
+
             <div class="input-group">
-                <label>ชื่อ - สกุล</label>
-                <input type="text" id="studentName" placeholder="กรอกชื่อและนามสกุล">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="ชื่อผู้ใช้งาน" onkeydown="checkEnter(event)">
             </div>
-            <div class="input-row">
-                <div class="input-sub-group">
-                    <label>ชั้น</label>
-                    <select id="studentClass">
-                        <option value="ม.1/1">ม.1/1</option>
-                        <option value="ม.1/2">ม.1/2</option>
-                        <option value="ม.1/3">ม.1/3</option>
-                        <option value="ม.1/4">ม.1/4</option>
-                        <option value="ม.1/5">ม.1/5</option>
-                        <option value="ม.1/6">ม.1/6</option>
-                        <!-- เพิ่ม option - สำหรับบัญชีครูผู้สอน/ผู้ดูแล -->
-                        <option value="-">-</option>
-                    </select>
-                </div>
-                <div class="input-sub-group">
-                    <label>เลขที่</label>
-                    <!-- เปลี่ยน type เป็น text เพื่อรองรับการกรอกเลขที่ 00 สำหรับ Admin -->
-                    <input type="text" id="studentNumber" placeholder="1">
-                </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="รหัสผ่าน" onkeydown="checkEnter(event)">
             </div>
+
             <button class="btn-cyber" onclick="loginAndGo()">เข้าสู่ระบบ</button>
         </div>
     </div>
 
     <script>
-
-
         window.onload = function () {
             if (sessionStorage.getItem('isLoggedIn') === 'true') {
                 const role = sessionStorage.getItem('userRole');
@@ -192,30 +142,28 @@
                 }
             }
         }
-        async function loginAndGo() {
-            const name = document.getElementById('studentName').value.trim().normalize('NFC');
-            const sClass = document.getElementById('studentClass').value;
-            const sNoRaw = document.getElementById('studentNumber').value.trim();
 
-            if (!name || !sNoRaw) {
-                alert('กรุณากรอกชื่อ-นามสกุล และเลขที่ให้ครบถ้วนครับ');
+        function checkEnter(event) {
+            if (event.key === 'Enter') {
+                loginAndGo();
+            }
+        }
+
+        async function loginAndGo() {
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+
+            if (!usernameInput || !passwordInput) {
+                alert('กรุณากรอก Username และ Password ให้ครบถ้วนครับ');
                 return;
             }
-
-            // ── Pad เลขที่ให้เป็น 2 หลักเพื่อให้ตรงกับ DB (01, 02, ... 14) ──
-            // Admin ใช้ค่า '-' ซึ่งไม่ต้อง pad
-            const sNo = (sClass === '-' || isNaN(Number(sNoRaw)))
-                ? sNoRaw
-                : String(Number(sNoRaw)).padStart(2, '0');
-
-
 
             // ── Query Supabase ──
             const { data: candidates, error } = await _supabase
                 .from('students')
                 .select('*')
-                .eq('class', sClass)
-                .eq('no', sNo);
+                .eq('username', usernameInput)
+                .eq('password', passwordInput);
 
             if (error) {
                 if (error.code === 'PGRST301' || error.message.includes('RLS')) {
@@ -230,29 +178,12 @@
                 return;
             }
 
-
-
             if (!candidates || candidates.length === 0) {
-                alert(
-                    '❌ ไม่พบข้อมูลในระบบ\n\n' +
-                    'ชั้น: ' + sClass + '  |  เลขที่: ' + sNo + '\n\n' +
-                    'กรุณาตรวจสอบ: ชั้นเรียน และเลขที่ให้ถูกต้อง'
-                );
+                alert('❌ Username หรือ Password ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
                 return;
             }
 
-            // ── เทียบชื่อ (NFC normalize) ──
-            const user = candidates.find(u => u.name.trim().normalize('NFC') === name);
-            if (!user) {
-                const dbNames = candidates.map(u => '"' + u.name + '"').join(', ');
-                alert(
-                    '❌ ชื่อ-นามสกุลไม่ถูกต้อง\n\n' +
-                    'กรอกมา: ' + name + '\n' +
-                    'ในระบบ: ' + dbNames + '\n\n' +
-                    'กรุณาตรวจสอบการสะกดชื่อให้ตรงกับที่ลงทะเบียนไว้ครับ'
-                );
-                return;
-            }
+            const user = candidates[0]; // ดึงข้อมูล user ที่ตรงกับรหัส
 
             // ── ตรวจสอบว่าถูกบล็อกหรือไม่ ──
             if (user.is_blocked) {

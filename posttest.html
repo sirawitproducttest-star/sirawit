@@ -259,14 +259,8 @@
         </div>
     </div>
 
+    <script src="supabase-config.js"></script>
     <script>
-        // 1. ตั้งค่าเชื่อมต่อ Supabase (ใส่ Key ของครู)
-        const SUPABASE_URL = 'https://syadfbmtewdkexsmfjrp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5YWRmYm10ZXdka2V4c21manJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDI0MTcsImV4cCI6MjEwMjM3ODQxN30.yROrRKWUVre99ZCWgGxaG1IAKnKFaLdtdcqyIO3IhPQ';
-        let _supabase = null;
-        if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'ใส่_PROJECT_URL_ตรงนี้') {
-            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
 
         // คลังข้อสอบต้นฉบับ 10 ข้อ
         const rawQuizData = [
